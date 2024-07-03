@@ -6,10 +6,9 @@ class GaussianClassifier:
     def __init__(self,D,L):
         (self.DTR, self.LTR), (self.DTE, self.LTE) = split_db_2to1(D,L)
         self.covMatrices = []
-    def train(self,mode="mvg",disable_print=False):
+    def train(self,mode="mvg"):
         # disable print
-        if disable_print:
-            print = lambda *args, **kwargs: None
+   
 
         self.covMatrices = []
         self.predicted_labels = []
@@ -21,12 +20,10 @@ class GaussianClassifier:
             self.__naive__()
         elif mode=="tied":
             self.__tied__()
-        #resume print
-        if disable_print:
-            print = print_function
 
 
-    def evaluate(self,disable_print=False,**kwargs):
+
+    def evaluate(self,**kwargs):
         """
         Evaluate the classifier using the test set.
         It also sets both LLRs and the accuracy of the classifier.
@@ -38,8 +35,6 @@ class GaussianClassifier:
         Returns:
             The predicted labels and the accuracy of the classifier
         """
-        if disable_print:
-            print = lambda *args, **kwargs: None
         threshold = kwargs.get('threshold',0)
         if threshold == 'optimal':
             prior = kwargs.get('prior',0.5)
@@ -59,9 +54,6 @@ class GaussianClassifier:
         self.accuracy = correct_pred/myarr.size*100
         print(f'False predictions: {false_pred}')
         print(f'Error rate: {false_pred/myarr.size*100}% over {myarr.size} samples.')
-
-        if disable_print:
-            print = print_function
         return PVAL, self.accuracy
 
     def get_cov_matrices(self):

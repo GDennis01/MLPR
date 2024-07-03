@@ -225,29 +225,29 @@ if __name__ == '__main__':
     #endregion
 
     # region DCF for different lambdas with Weighted Log-reg
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,train_weighted_logreg_binary)
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
-    #endregion
-
-    #region Quadratic Logistic Regression 
     lambdas = np.logspace(-4,2,13)
     prior = 0.1
-    DTR = quadratic_feature_expansion(DTR)
-    DTE = quadratic_feature_expansion(DTE)
-
-    dcfs,min_dcfs = get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,train_logreg_binary)
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,train_weighted_logreg_binary)
     plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
-    #region Centering data to see effects of regularization term(lambda)
+    #region Quadratic Logistic Regression 
     # lambdas = np.logspace(-4,2,13)
     # prior = 0.1
-    # #centering data wrg to training set
-    # DTR = DTR - DTR.mean(1,keepdims=True)
-    # DTE = DTE - DTR.mean(1,keepdims=True)
+    # DTR = quadratic_feature_expansion(DTR)
+    # DTE = quadratic_feature_expansion(DTE)
 
     # dcfs,min_dcfs = get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,train_logreg_binary)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    #endregion
+
+    #region Centering data to see effects of regularization term(lambda)
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
+    #centering data wrg to training set
+    DTR = DTR - DTR.mean(1,keepdims=True)
+    DTE = DTE - DTR.mean(1,keepdims=True)
+
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,train_logreg_binary)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion

@@ -4,99 +4,10 @@ import scipy
 import sys
 from svm import SVM
 from prettytable import PrettyTable
-sys.dont_write_bytecode = True
-
-def split_db_2to1(D, L, seed=0):
-    nTrain = int(D.shape[1]*2.0/3.0)
-    np.random.seed(seed)
-    idx = np.random.permutation(D.shape[1])
-    idxTrain = idx[0:nTrain]
-    idxTest = idx[nTrain:]
-    DTR = D[:, idxTrain]
-    DTE = D[:, idxTest]
-    LTR = L[idxTrain]
-    LTE = L[idxTest]
-    return (DTR, LTR), (DTE, LTE)
-
-def load(filename):
-    features=[]
-    classes=[]
-    with open(filename) as f:
-        for l in f:
-            fields = l.split(",")
-            _features=fields[:-1]
-            tmp = np.array([float(i) for i in _features])
-            tmp = tmp.reshape(tmp.size,1)
-            features.append(tmp)
-            classes.append(int(fields[-1].strip()))
-        classes=np.array(classes)
-        return np.hstack(features),classes
-
-def vcol(x):
-    return x.reshape((x.size, 1))
-
-def vrow(x):
-    return x.reshape((1, x.size))
+from Project.libs.utils import load,vcol,vrow,split_db_2to1
+from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 
 
-def get_confusion_matrix(predicted,actual):
-    n_labels = len(np.unique(actual))
-    confusion_matrix = np.zeros((n_labels,n_labels))
-    for i in range(n_labels):
-        for j in range(n_labels):
-            confusion_matrix[i,j] = np.sum((predicted==i)&(actual==j))
-    return confusion_matrix
-def get_missclass_matrix(confusion_matrix):
-    return confusion_matrix / vrow(confusion_matrix.sum(0))
-
-
-# Compute optimal Bayes decisions for the matrix of class posterior (each column refers to a sample)
-def compute_optimal_Bayes(posterior, costMatrix):
-    expectedCosts = costMatrix @ posterior
-    return np.argmin(expectedCosts, 0)
-def uniform_cost_matrix(nClasses):
-    return np.ones((nClasses, nClasses)) - np.eye(nClasses)
-    
-# this way to compute accuracy yields the *same* exact result as the one in predict_data
-def get_accuracy(predicted,actual):
-    return (predicted==actual).sum()/len(predicted)*100
-
-def compute_optimal_Bayes_binary_threshold(prior, Cfn, Cfp):
-    return -np.log( (prior * Cfn) / ((1 - prior) * Cfp) )   
-
-def get_false_negatives(conf_matrix):
-    return conf_matrix[0,1]/(conf_matrix[0,1]+conf_matrix[1,1])
-def get_false_positives(conf_matrix):
-    return conf_matrix[1,0]/(conf_matrix[0,0]+conf_matrix[1,0])
-def get_true_positives(conf_matrix):
-    return 1-get_false_negatives(conf_matrix)
-def get_dcf(conf_matrix,prior,Cfn,Cfp,normalized=False):
-    _dcf = prior*Cfn*get_false_negatives(conf_matrix) + (1-prior)*Cfp*get_false_positives(conf_matrix)
-    if normalized:
-        return _dcf/min(prior*Cfn,(1-prior)*Cfp)
-    return _dcf
-def get_dcf_multiclass(confusion_matrix,cost_matrix,priors,normalized=False):
-    miss_class_matrix = get_missclass_matrix(confusion_matrix)
-    bayes_error = ((miss_class_matrix*cost_matrix).sum(0)*priors.ravel()).sum()
-    if normalized:
-        return bayes_error/np.min(cost_matrix@vcol(priors))
-    return bayes_error
-
-def get_effective_prior(prior,Cfn,Cfp):
-    return (prior*Cfn)/(prior*Cfn+((1-prior)*(Cfp)))
-
-def PCA(dataset,n_dim,specif_dim=None):
-    mu_ds = dataset.mean(1)
-    centered_dataset = dataset - vcol(mu_ds)
-    covar_ds = (centered_dataset@centered_dataset.T)/dataset.shape[1]
-
-    U, s, Vh = np.linalg.svd(covar_ds)
-    if specif_dim == None:
-        P = U[:,0:n_dim]
-    else:
-        P = U[:,specif_dim:specif_dim+1]
-
-    return P.T
 def train_logreg_binary(DTR, LTR, l):
     ZTR = LTR * 2.0 - 1.0 # We do it outside the objective function, since we only need to do it once
     def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
