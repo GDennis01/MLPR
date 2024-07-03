@@ -52,8 +52,9 @@ def mean(dataset):
     return dataset.mean(1).reshape(dataset.shape[0],1)
 
 
-if __name__ == '__main__':
-    features,classes=load('trainData.txt')
+# if __name__ == '__main__':
+def Lab2():
+    features,classes=load('Project/data/trainData.txt')
 
     mu_ds = mean(features)
     dc_ds = features - mu_ds

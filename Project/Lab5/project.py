@@ -34,7 +34,10 @@ def heatmap(data):
                      fontsize=8)
     plt.imshow(data)
     plt.show()
-
+def cov_m(D):
+    mu = D.mean(1)
+    Dc = D - vcol(mu)
+    return Dc@Dc.T/D.shape[1]
 # Compute log-density for a single sample x (column vector). The result is a 1-D array with 1 element
 def logpdf_GAU_ND_singleSample(x, mu, C):
     P = np.linalg.inv(C)
@@ -151,6 +154,7 @@ if __name__ == '__main__':
     #region MVG classifier
     print("MVG:")
     SJoint,_,p_labels = mvg(DTR,LTR,DTE,LTE)
+    print(SJoint)
     llr = np.log(SJoint[1]/SJoint[0])
     predict_data(DTE,LTE,llr,0)
     acc = get_accuracy(p_labels,LTE)
@@ -159,115 +163,116 @@ if __name__ == '__main__':
     #endregion
 
     #region Tied Covariance classifier
-    # print("Tied MVG:")
-    # SJoint,p_labels = tied_cov(DTR,LTR,DTE,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # predict_data(DTE,LTE,llr,0)
-    # acc = get_accuracy(p_labels,LTE)
-    # print("Accuracy: ",acc)
-    # print("")
+    print("Tied MVG:")
+    SJoint,p_labels = tied_cov(DTR,LTR,DTE,LTE)
+    llr = SJoint[1]-SJoint[0]
+    predict_data(DTE,LTE,llr,0)
+    acc = get_accuracy(p_labels,LTE)
+    print("Accuracy: ",acc)
+    print("")
     #endregion
 
     #region Naive Bayes classifier
-    # print("Naive Bayes:")
-    # SJoint,p_labels = naive_bayes(DTR,LTR,DTE,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # acc = get_accuracy(p_labels,LTE)
-    # predict_data(DTE,LTE,llr,0)
-    # print("Accuracy: ",acc)
+    print("Naive Bayes:")
+    SJoint,p_labels = naive_bayes(DTR,LTR,DTE,LTE)
+    llr = SJoint[1]-SJoint[0]
+    acc = get_accuracy(p_labels,LTE)
+    predict_data(DTE,LTE,llr,0)
+    print("Accuracy: ",acc)
     #endregion
 
     #region Pearson Correlation
-    # _,covs,_ = mvg(DTR,LTR,DTE,LTE)
-    # heatmap(covs[0])
-    # heatmap(covs[1])
-    # Corr_false = covs[0] / ( vcol(covs[0].diagonal()**0.5) * vrow(covs[0].diagonal()**0.5) )
-    # Corr_true = covs[1] / ( vcol(covs[1].diagonal()**0.5) * vrow(covs[1].diagonal()**0.5) )
-    # heatmap(Corr_false)
-    # heatmap(Corr_true)
+    _,covs,_ = mvg(DTR,LTR,DTE,LTE)
+    heatmap(covs[0])
+    heatmap(covs[1])
+    Corr_false = covs[0] / ( vcol(covs[0].diagonal()**0.5) * vrow(covs[0].diagonal()**0.5) )
+    Corr_true = covs[1] / ( vcol(covs[1].diagonal()**0.5) * vrow(covs[1].diagonal()**0.5) )
+    heatmap(Corr_false)
+    heatmap(Corr_true)
     #endregion
 
     #region Naive bayes features 1-4
-    # DTRx = DTR[0:4,:]
-    # DTEx = DTE[0:4,:]
-    # SJoint,p_labels = naive_bayes(DTRx,LTR,DTEx,LTE)
-    # # llr = SJoint[1]-SJoint[0]
-    # llr = np.log(SJoint[1]/SJoint[0])
-    # print("Naive Bayes:")
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
-    # print("")
+    DTRx = DTR[0:4,:]
+    DTEx = DTE[0:4,:]
+    SJoint,p_labels = naive_bayes(DTRx,LTR,DTEx,LTE)
+    # llr = SJoint[1]-SJoint[0]
+    llr = np.log(SJoint[1]/SJoint[0])
+    print("Naive Bayes:")
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
+    print("")
     #endregion
 
     #region Tied Cov features 1-4
-    # DTRx = DTR[0:4,:]
-    # DTEx = DTE[0:4,:]
-    # print("Tied cov:")
-    # SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
-    # # llr = SJoint[1]-SJoint[0]
-    # llr = np.log(SJoint[1]/SJoint[0])
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
-    # print("")
+    DTRx = DTR[0:4,:]
+    DTEx = DTE[0:4,:]
+    print("Tied cov:")
+    SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
+    # llr = SJoint[1]-SJoint[0]
+    llr = np.log(SJoint[1]/SJoint[0])
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
+    print("")
     #endregion
 
     #region MVG features 1-4
-    # DTRx = DTR[0:4,:]
-    # DTEx = DTE[0:4,:]
-    # SJoint,_,p_labels = mvg(DTRx,LTR,DTEx,LTE)
-    # # llr = SJoint[1]-SJoint[0]
-    # llr = np.log(SJoint[1]/SJoint[0])
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
+    DTRx = DTR[0:4,:]
+    DTEx = DTE[0:4,:]
+    SJoint,_,p_labels = mvg(DTRx,LTR,DTEx,LTE)
+    # llr = SJoint[1]-SJoint[0]
+    llr = np.log(SJoint[1]/SJoint[0])
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
     #endregion
 
     #region MVG and Tied pair 1-2 3-4
-    # DTRx = DTR[0:2,:]
-    # DTEx = DTE[0:2,:]
-    # SJoint,_,p_labels = mvg(DTRx,LTR,DTEx,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # print("MVG features 1-2")
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
+    DTRx = DTR[0:2,:]
+    DTEx = DTE[0:2,:]
+    SJoint,_,p_labels = mvg(DTRx,LTR,DTEx,LTE)
+    llr = SJoint[1]-SJoint[0]
+    print("MVG features 1-2")
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
 
-    # DTRx = DTR[2:4,:]
-    # DTEx = DTE[2:4,:]
-    # SJoint,_ ,p_labels= mvg(DTRx,LTR,DTEx,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # print("\n\nMVG features 3-4")
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
+    DTRx = DTR[2:4,:]
+    DTEx = DTE[2:4,:]
+    SJoint,_ ,p_labels= mvg(DTRx,LTR,DTEx,LTE)
+    llr = SJoint[1]-SJoint[0]
+    print("\n\nMVG features 3-4")
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
 
-    # DTRx = DTR[0:2,:]
-    # DTEx = DTE[0:2,:]
-    # SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # print("\n\nTied MVG features 1-2")
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
+    DTRx = DTR[0:2,:]
+    DTEx = DTE[0:2,:]
+    SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
+    llr = SJoint[1]-SJoint[0]
+    print("\n\nTied MVG features 1-2")
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
 
-    # DTRx = DTR[2:4,:]
-    # DTEx = DTE[2:4,:]
-    # SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
-    # llr = SJoint[1]-SJoint[0]
-    # print("\n\nTied MVG features 3-4")
-    # acc = get_accuracy(p_labels,LTE)
-    # print(f"Accuracy: {acc}%")
-    # predict_data(DTEx,LTE,llr,0)
+    DTRx = DTR[2:4,:]
+    DTEx = DTE[2:4,:]
+    SJoint,p_labels = tied_cov(DTRx,LTR,DTEx,LTE)
+    llr = SJoint[1]-SJoint[0]
+    print("\n\nTied MVG features 3-4")
+    acc = get_accuracy(p_labels,LTE)
+    print(f"Accuracy: {acc}%")
+    predict_data(DTEx,LTE,llr,0)
     #endregion
 
     #region PCA pre-processing
     accuracies_mvg = []
     accuracies_tied = []
     accuracies_naive = []
-    for i in range(1,6):
-        m=i+1
+    for i in range(1,7):
+        # m=i+1
+        m=i
         print(f"PCA with {m} dimensions")
         PCA_m = PCA(features,m)
         proj_data = PCA_m@features
@@ -294,9 +299,9 @@ if __name__ == '__main__':
     print(accuracies_mvg)
     print(accuracies_tied)
     print(accuracies_naive) 
-    plt.plot(range(2,7),accuracies_mvg,marker="o",label="MVG")
-    plt.plot(range(2,7),accuracies_naive,marker="o",label="Naive Bayes")
-    plt.plot(range(2,7),accuracies_tied,marker="o",label="Tied MVG")
+    plt.plot(range(1,7),accuracies_mvg,marker="o",label="MVG")
+    plt.plot(range(1,7),accuracies_naive,marker="o",label="Naive Bayes")
+    plt.plot(range(1,7),accuracies_tied,marker="o",label="Tied MVG")
     plt.xlabel("Number of features")
     plt.xticks(range(2,7))
     plt.ylabel("Accuracy(%)")

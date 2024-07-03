@@ -29,22 +29,8 @@ def _plot_scatter_nested(dataset,classes,n_label,labels):
                 # plt.tight_layout()
                 plt.legend()  
     plt.show()
-# def plot_scatter_nested(dataset,classes,n_label,labels):
-#     fig,axs = plt.subplots(6,6)
-#     for i in range(dataset.shape[0]):
-#         for j in range(dataset.shape[0]):
-#             if i==j:
-#                 continue
-#             for z in range(n_label):
-#                 axs[i,j].scatter(dataset[i][classes==z],dataset[j][classes==z],alpha=0.5,label=labels[z])
-#                 axs[i,j].set(xlabel=(f'Feature {i+1}'),ylabel=(f'Feature {j+1}'))
-#             plt.legend()
-#     plt.show()
-def plot_scatter_nested(dataset,classes,n_label,labels):
-    
-    # plot all possible combinations of scatter plots between features 0-5, removing duplicates and inverted plots
-    # for example , plot f1 vs f2, f1 vs f3, f1 vs f4, f1 vs f5, f2 vs f3 and so on
-    # and save in a folder called scatter_plots
+
+def plot_scatter_nested(dataset,classes,n_label,labels):    
     for i in range(dataset.shape[0]):
         for j in range(i+1,dataset.shape[0]):
             plt.scatter(dataset[i][classes==0],dataset[j][classes==0],alpha=0.5,label=labels[0])

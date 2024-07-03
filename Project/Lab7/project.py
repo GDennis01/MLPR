@@ -190,140 +190,140 @@ if __name__ == '__main__':
     #endregion
 
     #region Optimal bayes decisions for MVG, Tied Cov and Naive Bayes without PCA  for the first three applications
-    # apps=[[0.5,1.0,1.0],[0.9,1.0,1.0],[0.1,1.0,1.0]]
-    # Models = [mvg,tied_cov,naive_bayes]
-    # for model in Models:
-    #     print(f'Using model {model.__name__}\n')
-    #     if model == mvg:
-    #         SJoint,_,predicted = model(DTR,LTR,DTE,LTE)
-    #     else:
-    #         SJoint,predicted = model(DTR,LTR,DTE,LTE)
+    apps=[[0.5,1.0,1.0],[0.9,1.0,1.0],[0.1,1.0,1.0]]
+    Models = [mvg,tied_cov,naive_bayes]
+    for model in Models:
+        print(f'Using model {model.__name__}\n')
+        if model == mvg:
+            SJoint,_,predicted = model(DTR,LTR,DTE,LTE)
+        else:
+            SJoint,predicted = model(DTR,LTR,DTE,LTE)
             
-    #     for app in apps:
-    #         print(f'Application {app}')
-    #         prior_arr = np.array([1-app[0],app[0]])
-    #         costMatrix = [[0,app[1]],[app[2],0]]
+        for app in apps:
+            print(f'Application {app}')
+            prior_arr = np.array([1-app[0],app[0]])
+            costMatrix = [[0,app[1]],[app[2],0]]
 
-    #         binary_threshold = compute_optimal_Bayes_binary_threshold(app[0],app[1],app[2])
+            binary_threshold = compute_optimal_Bayes_binary_threshold(app[0],app[1],app[2])
             
-    #         LLR = np.log(SJoint[1]/SJoint[0])
-    #         optimal_bayes_predictions = LLR>binary_threshold
+            LLR = np.log(SJoint[1]/SJoint[0])
+            optimal_bayes_predictions = LLR>binary_threshold
             
-    #         conf_matrix = get_confusion_matrix(optimal_bayes_predictions,LTE)
-    #         dcf_norm = get_dcf(conf_matrix,app[0],app[1],app[2],normalized=True)
+            conf_matrix = get_confusion_matrix(optimal_bayes_predictions,LTE)
+            dcf_norm = get_dcf(conf_matrix,app[0],app[1],app[2],normalized=True)
 
-    #         thresholds = np.linspace(LLR.min(),LLR.max(),1000)
-    #         min_dcf = np.min([get_dcf(get_confusion_matrix(LLR>t,LTE),app[0],app[1],app[2],normalized=True) for t in thresholds])
+            thresholds = np.linspace(LLR.min(),LLR.max(),1000)
+            min_dcf = np.min([get_dcf(get_confusion_matrix(LLR>t,LTE),app[0],app[1],app[2],normalized=True) for t in thresholds])
             
-    #         print(f'Conf matrix is \n{conf_matrix}')
-    #         print(f'DCF  \n{dcf_norm}')
-    #         print(f'Minimum DCF is \n{min_dcf}\n')
+            print(f'Conf matrix is \n{conf_matrix}')
+            print(f'DCF  \n{dcf_norm}')
+            print(f'Minimum DCF is \n{min_dcf}\n')
             
     
     # #endregion
 
     # #region Optimal bayes decisions for MVG, Tied Cov and Naive Bayes with PCA  for the first three applications
-    my_table = PrettyTable()
-    my_table.field_names = ["PCA","Model","Application","Conf Matrix","DCF","Min DCF"]
+    # my_table = PrettyTable()
+    # my_table.field_names = ["PCA","Model","Application","Conf Matrix","DCF","Min DCF"]
 
-    apps=[[0.5,1.0,1.0],[0.9,1.0,1.0],[0.1,1.0,1.0]]
-    Models = [mvg,tied_cov,naive_bayes]
-    dcfs = np.empty((len(Models),6))
-    min_dcfs = np.empty((len(Models),6))
+    # apps=[[0.5,1.0,1.0],[0.9,1.0,1.0],[0.1,1.0,1.0]]
+    # Models = [mvg,tied_cov,naive_bayes]
+    # dcfs = np.empty((len(Models),6))
+    # min_dcfs = np.empty((len(Models),6))
 
-    llrs_main_app = {model.__name__: {} for model in Models}
-    for M in range(1,features.shape[0]+1):
-        PCA_m = PCA(features,M)
-        proj_data = PCA_m@features
-        (DTR, LTR), (DTE, LTE) = split_db_2to1(proj_data, classes)
+    # llrs_main_app = {model.__name__: {} for model in Models}
+    # for M in range(1,features.shape[0]+1):
+    #     PCA_m = PCA(features,M)
+    #     proj_data = PCA_m@features
+    #     (DTR, LTR), (DTE, LTE) = split_db_2to1(proj_data, classes)
 
-        for model in Models:
-            if model == mvg:
-                SJoint,_,predicted = model(DTR,LTR,DTE,LTE)
-            else:
-                SJoint,predicted = model(DTR,LTR,DTE,LTE)
+    #     for model in Models:
+    #         if model == mvg:
+    #             SJoint,_,predicted = model(DTR,LTR,DTE,LTE)
+    #         else:
+    #             SJoint,predicted = model(DTR,LTR,DTE,LTE)
                 
-            for app in apps:
-                prior_arr = np.array([1-app[0],app[0]])
-                costMatrix = [[0,app[1]],[app[2],0]]
-                binary_threshold = compute_optimal_Bayes_binary_threshold(app[0],app[1],app[2])
+    #         for app in apps:
+    #             prior_arr = np.array([1-app[0],app[0]])
+    #             costMatrix = [[0,app[1]],[app[2],0]]
+    #             binary_threshold = compute_optimal_Bayes_binary_threshold(app[0],app[1],app[2])
                 
-                LLR = np.log(SJoint[1]/SJoint[0])
-                if app == apps[2]:
-                    llrs_main_app[model.__name__][M] = LLR 
-                optimal_bayes_predictions = LLR>binary_threshold
+    #             LLR = np.log(SJoint[1]/SJoint[0])
+    #             if app == apps[2]:
+    #                 llrs_main_app[model.__name__][M] = LLR 
+    #             optimal_bayes_predictions = LLR>binary_threshold
                 
-                conf_matrix = get_confusion_matrix(optimal_bayes_predictions,LTE)
-                dcf_norm = get_dcf(conf_matrix,app[0],app[1],app[2],normalized=True)
-                if app == apps[2]:
-                    dcfs[Models.index(model),M-1] = dcf_norm
+    #             conf_matrix = get_confusion_matrix(optimal_bayes_predictions,LTE)
+    #             dcf_norm = get_dcf(conf_matrix,app[0],app[1],app[2],normalized=True)
+    #             if app == apps[2]:
+    #                 dcfs[Models.index(model),M-1] = dcf_norm
 
 
-                thresholds = np.linspace(LLR.min(),LLR.max(),1000)
-                min_dcf = np.min([get_dcf(get_confusion_matrix(LLR>t,LTE),app[0],app[1],app[2],normalized=True) for t in thresholds])
-                if app == apps[2]:
-                    min_dcfs[Models.index(model),M-1] = min_dcf
-                my_table.add_row([M,model.__name__,app,conf_matrix,dcf_norm,min_dcf])
-    best_PCA = np.argmin(min_dcfs.sum(0))
-    print(f'Best PCA is {best_PCA+1}')
-    print(my_table)
-    for model in Models:
-        pyplot = plt.figure()   
-        plt.plot(range(1,features.shape[0]+1),dcfs[Models.index(model),:],label=f'{model.__name__}')
-        plt.plot(range(1,features.shape[0]+1),min_dcfs[Models.index(model),:],label=f'{model.__name__} MIN')
-        plt.xlabel('M')
-        plt.xticks(range(1,features.shape[0]+1))
-        plt.ylabel('DCF')
-        plt.legend()
-        plt.show()
-    plt.plot(range(1,features.shape[0]+1),dcfs[0,:],label='MVG')
-    plt.plot(range(1,features.shape[0]+1),dcfs[1,:],label='Tied Cov')
-    plt.plot(range(1,features.shape[0]+1),dcfs[2,:],label='Naive Bayes')
+    #             thresholds = np.linspace(LLR.min(),LLR.max(),1000)
+    #             min_dcf = np.min([get_dcf(get_confusion_matrix(LLR>t,LTE),app[0],app[1],app[2],normalized=True) for t in thresholds])
+    #             if app == apps[2]:
+    #                 min_dcfs[Models.index(model),M-1] = min_dcf
+    #             my_table.add_row([M,model.__name__,app,conf_matrix,dcf_norm,min_dcf])
+    # best_PCA = np.argmin(min_dcfs.sum(0))
+    # print(f'Best PCA is {best_PCA+1}')
+    # print(my_table)
+    # for model in Models:
+    #     pyplot = plt.figure()   
+    #     plt.plot(range(1,features.shape[0]+1),dcfs[Models.index(model),:],label=f'{model.__name__}')
+    #     plt.plot(range(1,features.shape[0]+1),min_dcfs[Models.index(model),:],label=f'{model.__name__} MIN')
+    #     plt.xlabel('M')
+    #     plt.xticks(range(1,features.shape[0]+1))
+    #     plt.ylabel('DCF')
+    #     plt.legend()
+    #     plt.show()
+    # plt.plot(range(1,features.shape[0]+1),dcfs[0,:],label='MVG')
+    # plt.plot(range(1,features.shape[0]+1),dcfs[1,:],label='Tied Cov')
+    # plt.plot(range(1,features.shape[0]+1),dcfs[2,:],label='Naive Bayes')
 
-    plt.plot(range(1,features.shape[0]+1),min_dcfs[0,:],label='MVG MIN')
-    plt.plot(range(1,features.shape[0]+1),min_dcfs[1,:],label='Tied Cov MIN')
-    plt.plot(range(1,features.shape[0]+1),min_dcfs[2,:],label='Naive Bayes MIN')
-    plt.xlabel('M')
-    plt.xticks(range(1,features.shape[0]+1))
-    plt.ylabel('DCF')
-    plt.legend()
-    plt.show()
+    # plt.plot(range(1,features.shape[0]+1),min_dcfs[0,:],label='MVG MIN')
+    # plt.plot(range(1,features.shape[0]+1),min_dcfs[1,:],label='Tied Cov MIN')
+    # plt.plot(range(1,features.shape[0]+1),min_dcfs[2,:],label='Naive Bayes MIN')
+    # plt.xlabel('M')
+    # plt.xticks(range(1,features.shape[0]+1))
+    # plt.ylabel('DCF')
+    # plt.legend()
+    # plt.show()
     #endregion
 
     # #region Bayes error plots with best PCA setup for the pi=0.1 application
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(features, classes)
-    PCA_m = PCA(features,best_PCA+2)
-    proj_data = PCA_m@features
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(proj_data, classes)
-    llrs = [llrs_main_app[model.__name__][best_PCA] for model in Models]
-    eff_prior_log_odds = np.linspace(-4,4,100)
-    priors = [1 / (1 + np.exp(-x)) for x in eff_prior_log_odds]
-    pyplot = plt.figure()
+    # (DTR, LTR), (DTE, LTE) = split_db_2to1(features, classes)
+    # PCA_m = PCA(features,best_PCA+2)
+    # proj_data = PCA_m@features
+    # (DTR, LTR), (DTE, LTE) = split_db_2to1(proj_data, classes)
+    # llrs = [llrs_main_app[model.__name__][best_PCA] for model in Models]
+    # eff_prior_log_odds = np.linspace(-4,4,100)
+    # priors = [1 / (1 + np.exp(-x)) for x in eff_prior_log_odds]
+    # pyplot = plt.figure()
 
-    dcfs = np.empty((len(Models),100))
-    min_dcfs = np.empty((len(Models),100))
-    for model in Models:
-        LLR = llrs[Models.index(model)]
-        sorted_llrs = np.sort(LLR)
-        thresholds = np.linspace(sorted_llrs[0],sorted_llrs[-1],100)
-        for prior in priors:
-            threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
+    # dcfs = np.empty((len(Models),100))
+    # min_dcfs = np.empty((len(Models),100))
+    # for model in Models:
+    #     LLR = llrs[Models.index(model)]
+    #     sorted_llrs = np.sort(LLR)
+    #     thresholds = np.linspace(sorted_llrs[0],sorted_llrs[-1],100)
+    #     for prior in priors:
+    #         threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
 
-            min_dcf = [get_dcf(get_confusion_matrix(LLR>t,LTE),prior,1.0,1.0,normalized=True) for t in thresholds]
-            min_dcf = np.min(min_dcf)
-            min_dcfs[Models.index(model),priors.index(prior)] = min_dcf
+    #         min_dcf = [get_dcf(get_confusion_matrix(LLR>t,LTE),prior,1.0,1.0,normalized=True) for t in thresholds]
+    #         min_dcf = np.min(min_dcf)
+    #         min_dcfs[Models.index(model),priors.index(prior)] = min_dcf
 
-            dcf = get_dcf(get_confusion_matrix(LLR>threshold,LTE),prior,1.0,1.0,normalized=True)
-            dcfs[Models.index(model),priors.index(prior)] = dcf
+    #         dcf = get_dcf(get_confusion_matrix(LLR>threshold,LTE),prior,1.0,1.0,normalized=True)
+    #         dcfs[Models.index(model),priors.index(prior)] = dcf
 
-    for model in Models:
-        dcf = dcfs[Models.index(model),:]
-        min_dcf = min_dcfs[Models.index(model),:]
-        plt.plot(eff_prior_log_odds,dcf,label=f'{model.__name__} DCF')
-        plt.plot(eff_prior_log_odds,min_dcf,label=f'{model.__name__} MIN DCF') 
-        plt.xlabel('Effective Prior Log Odds')
-        plt.ylabel('(MIN) DCF')  
-        plt.legend()
-        plt.show()
+    # for model in Models:
+    #     dcf = dcfs[Models.index(model),:]
+    #     min_dcf = min_dcfs[Models.index(model),:]
+    #     plt.plot(eff_prior_log_odds,dcf,label=f'{model.__name__} DCF')
+    #     plt.plot(eff_prior_log_odds,min_dcf,label=f'{model.__name__} MIN DCF') 
+    #     plt.xlabel('Effective Prior Log Odds')
+    #     plt.ylabel('(MIN) DCF')  
+    #     plt.legend()
+    #     plt.show()
         
     #endregion
