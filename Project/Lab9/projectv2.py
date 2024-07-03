@@ -7,20 +7,6 @@ from prettytable import PrettyTable
 from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 
-
-# needed for the "quadratic" logistic regression, basically apply the expanded feature set to the normal logreg
-def quadratic_feature_expansion(X):
-    X_T = X.T
-    X_expanded = []
-    for x in X_T:
-        outer_product = np.outer(x, x).flatten()
-        expanded_feature = np.concatenate([outer_product, x])
-        X_expanded.append(expanded_feature)
-    X_expanded = np.array(X_expanded).T
-    return X_expanded
-
-
-
 def plot_dcf_vs_c(lambdas,dcfs,min_dcfs):
     plt.figure()
     plt.plot(lambdas,dcfs,label='DCFs')
