@@ -1,9 +1,10 @@
 import numpy as np
 import scipy
+from Project.libs.utils import split_db_2to1,vrow
 class SVM:
-    def __init__(self, DTR,LTR):
-        self.DTR = DTR
-        self.LTR = LTR
+    def __init__(self, D,L):
+        (self.DTR, self.LTR), (self.DTE, self.LTE) = split_db_2to1(D,L)
+
     def train(self, C,svm_type='linear',K=1,kernelFunc=None):
         """ 
         Train a SVM over a dataset
@@ -21,7 +22,12 @@ class SVM:
             return self.__train_dual_SVM_linear(C,K)
         if svm_type == 'kernel':
             return self.__train_dual_SVM_kernel(C,kernelFunc,K)
-            
+    @property
+    def scores(self):
+        """
+        Compute the SVM scores, that is w^Tx + b
+        """
+        return (vrow(self.w) @ self.DTE + self.b).ravel()
     def __train_dual_SVM_linear(self,C, K = 1):
     
         ZTR = self.LTR * 2.0 - 1.0 # Convert labels to +1/-1
@@ -48,7 +54,8 @@ class SVM:
         
         # Extract w and b - alternatively, we could construct the extended matrix for the samples to score and use directly v
         w, b = w_hat[0:self.DTR.shape[0]], w_hat[-1] * K # b must be rescaled in case K != 1, since we want to compute w'x + b * K
-
+        self.w = w
+        self.b = b
         primalLoss, dualLoss = primalLoss(w_hat), -fOpt(alphaStar)[0]
         print ('SVM - C %e - K %e - primal loss %e - dual loss %e - duality gap %e' % (C, K, primalLoss, dualLoss, primalLoss - dualLoss))
         

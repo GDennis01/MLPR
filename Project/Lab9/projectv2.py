@@ -2,54 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import sys
-from svm import SVM
+from Project.libs.svm import SVM
 from prettytable import PrettyTable
 from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 
-
-def train_logreg_binary(DTR, LTR, l):
-    ZTR = LTR * 2.0 - 1.0 # We do it outside the objective function, since we only need to do it once
-    def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
-        w = v[:-1]
-        b = v[-1]
-        s = np.dot(vcol(w).T, DTR).ravel() + b
-
-        loss = np.logaddexp(0, -ZTR * s)
-
-        G = -ZTR / (1.0 + np.exp(ZTR * s))
-        GW = (vrow(G) * DTR).mean(1) + l * w.ravel()
-        Gb = G.mean()
-        return loss.mean() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
-    vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(DTR.shape[0]+1))[0]
-    print ("Log-reg - lambda = %e - J*(w, b) = %e" % (l, logreg_obj_with_grad(vf)[0]))
-    return vf[:-1], vf[-1]
-
-def train_weighted_logreg_binary(DTR, LTR, l, pT):
-    ZTR = LTR * 2.0 - 1.0 # We do it outside the objective function, since we only need to do it once
-    wTrue = pT / (ZTR>0).sum() # Compute the weights for the two classes
-    wFalse = (1-pT) / (ZTR<0).sum()
-
-    def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
-        w = v[:-1]
-        b = v[-1]
-        s = np.dot(vcol(w).T, DTR).ravel() + b
-
-        loss = np.logaddexp(0, -ZTR * s)
-        loss[ZTR>0] *= wTrue # Apply the weights to the loss computations
-        loss[ZTR<0] *= wFalse
-
-        G = -ZTR / (1.0 + np.exp(ZTR * s))
-        G[ZTR > 0] *= wTrue # Apply the weights to the gradient computations
-        G[ZTR < 0] *= wFalse
-        
-        GW = (vrow(G) * DTR).sum(1) + l * w.ravel()
-        Gb = G.sum()
-        return loss.sum() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
-
-    vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(DTR.shape[0]+1))[0]
-    print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, l, logreg_obj_with_grad(vf)[0]))
-    return vf[:-1], vf[-1] 
 
 # needed for the "quadratic" logistic regression, basically apply the expanded feature set to the normal logreg
 def quadratic_feature_expansion(X):
@@ -62,57 +19,8 @@ def quadratic_feature_expansion(X):
     X_expanded = np.array(X_expanded).T
     return X_expanded
 
-def get_min_dcf(SVAL,LVAL,prior,Cfn,Cfp):
-    thresholds = np.concatenate([np.array([-np.inf]), SVAL, np.array([np.inf])])
-    min_dcf = np.min([get_dcf(get_confusion_matrix((SVAL>t),LVAL),prior,1,1,normalized=True) for t in thresholds])
-    return min_dcf
 
-# compute both dcf and min dcf for a given logreg model. it's mainly an utility function lest we repeat code
-# prior is needed only for the weighted model
-def get_dcf_mindcf_logreg(DTR,LTR,DTE,LTE,lambdas,prior,model=train_logreg_binary):
-    dcfs = []
-    min_dcfs = []
-    for l in lambdas:
-        print(f'Lambda: {l}')
 
-        if model == train_logreg_binary:
-            w,b = model(DTR, LTR, l)
-        elif model == train_weighted_logreg_binary:
-            w,b = model(DTR, LTR, l,prior)
-        else:
-            w,b = model(DTR, LTR, l)
-        # w,b = model(DTR, LTR, l)
-        
-        scores = logreg_scores(w,b,DTE)
-        empirical_prior = (LTR==1).sum()/LTR.size
-        print("@@@@"+str(empirical_prior))
-
-        if model == train_logreg_binary:
-            scores_llr = scores - np.log(empirical_prior/(1-empirical_prior))
-        elif model == train_weighted_logreg_binary:
-            scores_llr = scores - np.log(prior/(1-prior))
-        else:
-            scores_llr = scores - np.log(empirical_prior/(1-empirical_prior))
-
-        # scores_llr = scores - np.log(empirical_prior/(1-empirical_prior))
-
-        threshold = compute_optimal_Bayes_binary_threshold(prior, 1, 1)
-        predicted_labels = scores_llr > threshold
-        confusion_matrix = get_confusion_matrix(predicted_labels,LTE)
-
-        dcf = get_dcf(confusion_matrix,prior,1,1,normalized=True)
-        dcfs.append(dcf)
-        print(f'DCF: {dcf}')
-
-        thresholds = np.linspace(scores_llr.min(),scores_llr.max(),100)
-        min_dcf = np.min([get_dcf(get_confusion_matrix(scores_llr>t,LTE),0.1,1,1,normalized=True) for t in thresholds])
-        min_dcfs.append(min_dcf)
-        print(f'Min DCF: {min_dcf}\n')
-    return dcfs,min_dcfs
-
-def svm_scores(w,b,DTE):
-    return (vrow(w) @ DTE + b).ravel()
-    
 def plot_dcf_vs_c(lambdas,dcfs,min_dcfs):
     plt.figure()
     plt.plot(lambdas,dcfs,label='DCFs')
@@ -149,51 +57,42 @@ def rbfKernel(gamma):
 
 
     
-if __name__ == '__main__':
-    features,classes=load("trainData.txt")
+def Lab9():
+    features,classes=load("project/data/trainData.txt")
     # take only 1/10 of the data
     features = features[:,:int(features.shape[1]/10)]
     classes = classes[:int(classes.size/10)]
-    (DTR, LTR), (DTE, LTE) = split_db_2to1(features, classes)
     prior = 0.1
-    svm = SVM(DTR,LTR)
+    svm = SVM(features,classes)
 
     #region Linear SVM with DCF and MinDCF as C varies
     dcfs = []
     min_dcfs = []
     for C in np.logspace(-5,0,11):
         w,b= svm.train(C,'linear',K=1)
+        scores = svm.scores
 
-        scores = svm_scores(w,b,DTE)
-        threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
-        PVAL = (scores > threshold) * 1
-        conf_matrix = get_confusion_matrix(PVAL, LTE)
-
-        min_dcf =  get_min_dcf(scores, LTE, prior, 1.0, 1.0)
+        min_dcf =  get_min_dcf(scores, svm.LTE, prior, 1.0, 1.0)
         min_dcfs.append(min_dcf)
 
-        dcf = get_dcf(conf_matrix, prior, 1.0, 1.0,normalized=True)
+        dcf = get_dcf(scores, svm.LTE, prior, 1.0, 1.0,normalized=True,threshold='optimal')
         dcfs.append(dcf)
     plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region Polynomial Kernel SVM with DCF and MinDCF as C varies
-    # dcfs = []
-    # min_dcfs = []
-    # for C in np.logspace(-5,0,11):
-    #     fscore= svm.train(C,'kernel',K=1,kernelFunc=polyKernel(2,1))
+    dcfs = []
+    min_dcfs = []
+    for C in np.logspace(-5,0,11):
+        fscore= svm.train(C,'kernel',K=1,kernelFunc=polyKernel(2,1))
+        scores = fscore(svm.DTE)
 
-    #     scores = fscore(DTE)
-    #     threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
-    #     PVAL = (scores > threshold) * 1
-    #     conf_matrix = get_confusion_matrix(PVAL, LTE)
+        min_dcf =  get_min_dcf(scores, svm.LTE, prior, 1.0, 1.0)
+        min_dcfs.append(min_dcf)
 
-    #     min_dcf =  get_min_dcf(scores, LTE, prior, 1.0, 1.0)
-    #     min_dcfs.append(min_dcf)
-
-    #     dcf = get_dcf(conf_matrix, prior, 1.0, 1.0,normalized=True)
-    #     dcfs.append(dcf)
-    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+        dcf = get_dcf(scores, svm.LTE, prior, 1.0, 1.0,normalized=True,threshold='optimal')
+        dcfs.append(dcf)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region RBF Kernel SVM with DCF and MinDCF as C varies
@@ -206,19 +105,16 @@ if __name__ == '__main__':
         min_dcfs = []
         for C in Cs:
             fscore= svm.train(C,'kernel',kernelFunc=rbfKernel(g))
+            scores = fscore(svm.DTE)
 
-            scores = fscore(DTE)
-            threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
-            PVAL = (scores > threshold) * 1
-            conf_matrix = get_confusion_matrix(PVAL, LTE)
-
-            min_dcf =  get_min_dcf(scores, LTE, prior, 1.0, 1.0)
+            min_dcf =  get_min_dcf(scores, svm.LTE, prior, 1.0, 1.0)
             min_dcfs.append(min_dcf)
 
-            dcf = get_dcf(conf_matrix, prior, 1.0, 1.0,normalized=True)
+            dcf = get_dcf(scores, svm.LTE, prior, 1.0, 1.0,normalized=True,threshold='optimal')
             dcfs.append(dcf)
         plt.plot(Cs,dcfs,label=f'DCF with Gamma: {l}')
         plt.plot(Cs,min_dcfs,label=f'MinDCF with Gamma: {l}')
+
     plt.xscale('log',base=10)
     plt.xlabel('C')
     plt.ylabel('DCF')

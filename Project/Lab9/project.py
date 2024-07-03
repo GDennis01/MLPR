@@ -267,22 +267,22 @@ if __name__ == '__main__':
     #endregion
 
     #region Polynomial Kernel SVM with DCF and MinDCF as C varies
-    # dcfs = []
-    # min_dcfs = []
-    # for C in np.logspace(-5,0,11):
-    #     fscore= svm.train(C,'kernel',K=1,kernelFunc=polyKernel(2,1))
+    dcfs = []
+    min_dcfs = []
+    for C in np.logspace(-5,0,11):
+        fscore= svm.train(C,'kernel',K=1,kernelFunc=polyKernel(2,1))
 
-    #     scores = fscore(DTE)
-    #     threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
-    #     PVAL = (scores > threshold) * 1
-    #     conf_matrix = get_confusion_matrix(PVAL, LTE)
+        scores = fscore(DTE)
+        threshold = compute_optimal_Bayes_binary_threshold(prior,1,1)
+        PVAL = (scores > threshold) * 1
+        conf_matrix = get_confusion_matrix(PVAL, LTE)
 
-    #     min_dcf =  get_min_dcf(scores, LTE, prior, 1.0, 1.0)
-    #     min_dcfs.append(min_dcf)
+        min_dcf =  get_min_dcf(scores, LTE, prior, 1.0, 1.0)
+        min_dcfs.append(min_dcf)
 
-    #     dcf = get_dcf(conf_matrix, prior, 1.0, 1.0,normalized=True)
-    #     dcfs.append(dcf)
-    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+        dcf = get_dcf(conf_matrix, prior, 1.0, 1.0,normalized=True)
+        dcfs.append(dcf)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region RBF Kernel SVM with DCF and MinDCF as C varies
