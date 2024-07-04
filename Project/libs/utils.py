@@ -23,6 +23,10 @@ def load(filename):
             classes.append(int(fields[-1].strip()))
         classes=np.array(classes)
         return np.hstack(features),classes
+def compute_mu_C(D):
+    mu = vcol(D.mean(1))
+    C = ((D-mu) @ (D-mu).T) / float(D.shape[1])
+    return mu, C
     
 def cov_m(D):
     mu = D.mean(1)
