@@ -46,8 +46,8 @@ def rbfKernel(gamma):
 def Lab9():
     features,classes=load("project/data/trainData.txt")
     # take only 1/10 of the data
-    features = features[:,:int(features.shape[1]/10)]
-    classes = classes[:int(classes.size/10)]
+    # features = features[:,:int(features.shape[1]/10)]
+    # classes = classes[:int(classes.size/10)]
     prior = 0.1
     svm = SVM(features,classes)
 
