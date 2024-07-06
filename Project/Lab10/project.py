@@ -72,31 +72,31 @@ def Lab10():
     #                 print("MinDCF: ",min_dcf)
     #                 print()
     #endregion
- 
+
     #region Best candidate for LogReg
-    best_min_dcf = np.inf
-    best_lreg_setup = []
-    for quadratic in [True,False]:
-        for logreg_type in ['binary','weighted']:
-            for l in np.logspace(-5,5,11):
-                lrc = LogRegClassifier(DTR,LTR)
-                lrc.train(logreg_type,l,pT=prior,expaded_feature=quadratic)
+    # best_min_dcf = np.inf
+    # best_lreg_setup = []
+    # for quadratic in [True,False]:
+    #     for logreg_type in ['binary','weighted']:
+    #         for l in np.logspace(-5,5,11):
+    #             lrc = LogRegClassifier(DTR,LTR)
+    #             lrc.train(logreg_type,l,pT=prior,expaded_feature=quadratic)
     
 
-                empirical_prior = (lrc.LTR == 1).sum()/lrc.LTR.size
-                if logreg_type == "binary":
-                    scores_llr = lrc.logreg_scores - np.log(empirical_prior/(1-empirical_prior))
-                elif logreg_type == "weighted":
-                    scores_llr = lrc.logreg_scores - np.log(prior/(1-prior))
+    #             empirical_prior = (lrc.LTR == 1).sum()/lrc.LTR.size
+    #             if logreg_type == "binary":
+    #                 scores_llr = lrc.logreg_scores - np.log(empirical_prior/(1-empirical_prior))
+    #             elif logreg_type == "weighted":
+    #                 scores_llr = lrc.logreg_scores - np.log(prior/(1-prior))
 
-                dcf = get_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0, normalized=True, threshold='optimal')
-                min_dcf =  get_min_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0)
-                if min_dcf < best_min_dcf:
-                    best_min_dcf = min_dcf
-                    best_lreg_setup = [logreg_type,l,'quadratic'if quadratic else 'non-quadratic',min_dcf,dcf]
-                print(f'MinDCF: {min_dcf}')
-    print(f'Best setup is obtained with {best_lreg_setup[2]} {best_lreg_setup[0]} LogReg with lambda={best_lreg_setup[1]}')
-    print(f'MinDCF: {best_lreg_setup[3]}')
+    #             dcf = get_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0, normalized=True, threshold='optimal')
+    #             min_dcf =  get_min_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0)
+    #             if min_dcf < best_min_dcf:
+    #                 best_min_dcf = min_dcf
+    #                 best_lreg_setup = [logreg_type,l,'quadratic'if quadratic else 'non-quadratic',min_dcf,dcf]
+    #             print(f'MinDCF: {min_dcf}')
+    # print(f'Best setup is obtained with {best_lreg_setup[2]} {best_lreg_setup[0]} LogReg with lambda={best_lreg_setup[1]}')
+    # print(f'MinDCF: {best_lreg_setup[3]}')
     #endregion
 
     #region Best candidate for SVM
@@ -139,17 +139,24 @@ def Lab10():
     #endregion
 
     #region Best candidate for GMM
-    # print(f'Best setup is obtained with class 0 as {best_setup[0]} GMM with {best_setup[2]} components and class 1 as {best_setup[1]} GMM with {best_setup[3]} components with minDCF: {best_setup[4]}')
+    # print(f'Best setup is obtained with class 0 as {best_setup_gmm[0]} GMM with {best_setup_gmm[2]} components and class 1 as {best_setup_gmm[1]} GMM with {best_setup_gmm[3]} components with minDCF: {best_setup_gmm[4]}')
 
     #endregion
 
     #region Bayes error plots for different applications with the chosen setups
-    eff_prior_log_odds = np.linspace(-4,4,100)
+    #debug only
+    best_setup_svm = ['kernel',10,'rbfKernelFunc',0.215666748341587,0.215666748341587]
+    best_lreg_setup =[ 'binary', 0.01, 'quadratic', 0.215666748341587, 0.215666748341587]
+    best_setup_gmm=['diagonal','full',8,16,0.215666748341587,0.215666748341587]
+    
+    N_STOPS = 20
+
+    eff_prior_log_odds = np.linspace(-4,4,N_STOPS)
     priors = [1 / (1 + np.exp(-x)) for x in eff_prior_log_odds]
 
     Models = ['LogReg','SVM','GMM']
-    dcfs = np.empty((len(Models),100))
-    min_dcfs = np.empty((len(Models),100))  
+    dcfs = np.empty((len(Models),N_STOPS))
+    min_dcfs = np.empty((len(Models),N_STOPS))  
     for model in Models:  
         for prior in priors:  
             match model:
@@ -163,33 +170,38 @@ def Lab10():
                         scores_llr = lrc.logreg_scores - np.log(prior/(1-prior))
                     dcf = get_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0, normalized=True, threshold='optimal')
                     min_dcf =  get_min_dcf(scores_llr, lrc.LTE, prior, 1.0, 1.0)
-                    dcfs[Models.index(model),int(prior*100)] = dcf
-                    min_dcfs[Models.index(model),int(prior*100)] = min_dcf
+                    dcfs[Models.index(model),priors.index(prior)] = dcf
+                    min_dcfs[Models.index(model),priors.index(prior)] = min_dcf
                 case 'SVM':
                     svm = SVM(DTR,LTR)
                     if best_setup_svm[0] == 'kernel':
-                        fscore = svm.train(best_setup_svm[1],best_setup_svm[0],kernelFunc=best_setup_svm[2])
+                        if best_setup_svm[2] == 'polyKernelFunc':
+                            kernelFunc = polyKernel(2,1)
+                        elif best_setup_svm[2] == 'rbfKernelFunc':
+                            kernelFunc = rbfKernel(np.exp(-2))
+
+                        fscore = svm.train(best_setup_svm[1],best_setup_svm[0],kernelFunc=kernelFunc)
                         scores = fscore(svm.DTE)
                     else:
                         w,b= svm.train(best_setup_svm[1],best_setup_svm[0])
                         scores = svm.scores
                     min_dcf =  get_min_dcf(scores, svm.LTE, prior, 1.0, 1.0)
                     dcf = get_dcf(scores, svm.LTE, prior, 1.0, 1.0, normalized=True, threshold='optimal')
-                    dcfs[Models.index(model),int(prior*100)] = dcf
-                    min_dcfs[Models.index(model),int(prior*100)] = min_dcf
+                    dcfs[Models.index(model),priors.index(prior)] = dcf
+                    min_dcfs[Models.index(model),priors.index(prior)] = min_dcf
                 case 'GMM':
                     gmm0 = train_GMM_LBG_EM(DTR[:,LTR==0],best_setup_gmm[2],best_setup_gmm[0],verbose=False)
                     gmm1 = train_GMM_LBG_EM(DTR[:,LTR==1],best_setup_gmm[3],best_setup_gmm[1],verbose=False)
                     scores = gmm_scores(gmm0,gmm1,DTE)
                     dcf = get_dcf(scores,LTE,prior,1.0,1.0,normalized=True,threshold='optimal')
                     min_dcf = get_min_dcf(scores,LTE,prior,1.0,1.0)
-                    dcfs[Models.index(model),int(prior*100)] = dcf
-                    min_dcfs[Models.index(model),int(prior*100)] = min_dcf
+                    dcfs[Models.index(model),priors.index(prior)] = dcf
+                    min_dcfs[Models.index(model),priors.index(prior)] = min_dcf
     for model in Models:
         plt.plot(eff_prior_log_odds,dcfs[Models.index(model)],label=f'{model} DCF')
         plt.plot(eff_prior_log_odds,min_dcfs[Models.index(model)],label=f'{model} MinDCF')
         plt.xlabel('Log odds of effective prior')
-        plt.ylabel('DCF')
+        plt.ylabel(f'{model} - (Min)DCF')
         plt.legend()
         plt.show()
     #endregion

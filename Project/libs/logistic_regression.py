@@ -4,11 +4,22 @@ import numpy as np
 import scipy
 class LogRegClassifier:
     def __init__(self,D,L,one_fiftieth=False):
+        print("here")
         (self.DTR, self.LTR), (self.DTE, self.LTE) = split_db_2to1(D,L)
         if one_fiftieth:
             self.DTR = self.DTR[:,::50]
             self.LTR = self.LTR[::50]
-
+    
+    def with_details(DTR, LTR, DTE, LTE) -> 'LogRegClassifier':
+        """
+        Custom constructor without the split_db_2to1
+        """
+        self = LogRegClassifier.__new__(LogRegClassifier)
+        self.DTR = DTR
+        self.LTR = LTR
+        self.DTE = DTE
+        self.LTE = LTE
+        return self
     def train(self,mode="binary",l=1,pT=0.5,expaded_feature=False):
         """
         Train a logistic regression model on a given dataset
@@ -20,7 +31,7 @@ class LogRegClassifier:
         Returns:
             The weights(w) and the bias(b) of the model
         """
-
+        self.pT = pT
         if expaded_feature:
             self.DTR = LogRegClassifier.__quadratic_feature_expansion__(self.DTR)
             self.DTE = LogRegClassifier.__quadratic_feature_expansion__(self.DTE)
@@ -39,7 +50,13 @@ class LogRegClassifier:
         Compute the logreg scores, that is w^Tx + b
         """
         return np.dot(self.w.T,self.DTE) + self.b
-
+    @property
+    def llr_scores(self):
+        """
+        Compute the log-likelihood ratio scores, that is log(p(x|H1)/p(x|H0))
+        """
+        empirical_prior = (self.LTR==1).sum()/self.LTR.size
+        return self.logreg_scores - np.log(empirical_prior/(1-empirical_prior))
 
     def __logreg_binary__(self,D,L,l):
         """
@@ -64,7 +81,7 @@ class LogRegClassifier:
             Gb = G.mean()
             return loss.mean() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
         vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(self.DTR.shape[0]+1))[0]
-        print ("Log-reg - lambda = %e - J*(w, b) = %e" % (l, logreg_obj_with_grad(vf)[0]))
+        # print ("Log-reg - lambda = %e - J*(w, b) = %e" % (l, logreg_obj_with_grad(vf)[0]))
         return vf[:-1], vf[-1]
     def __train_weighted_logreg_binary__(self,DTR, LTR, l, pT):
         """
@@ -77,6 +94,7 @@ class LogRegClassifier:
         Returns:
             The weights(w) and the bias(b) of the model
         """
+
         ZTR = LTR * 2.0 - 1.0 # We do it outside the objective function, since we only need to do it once
         wTrue = pT / (ZTR>0).sum() # Compute the weights for the two classes
         wFalse = (1-pT) / (ZTR<0).sum()
@@ -99,7 +117,7 @@ class LogRegClassifier:
             return loss.sum() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
 
         vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(DTR.shape[0]+1))[0]
-        print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, l, logreg_obj_with_grad(vf)[0]))
+        # print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, l, logreg_obj_with_grad(vf)[0]))
         return vf[:-1], vf[-1] 
     def __quadratic_feature_expansion__(X):
         X_T = X.T
