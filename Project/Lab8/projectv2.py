@@ -84,9 +84,6 @@ def Lab8():
     #region Centering data to see effects of regularization term(lambda)
     lambdas = np.logspace(-4,2,13)
     prior = 0.1
-    #centering data wrg to training set
-    # DTR = DTR - DTR.mean(1,keepdims=True)
-    # DTE = DTE - DTR.mean(1,keepdims=True)
 
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
     plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)

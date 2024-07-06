@@ -49,9 +49,27 @@ def Lab9():
     # features = features[:,:int(features.shape[1]/10)]
     # classes = classes[:int(classes.size/10)]
     prior = 0.1
-    svm = SVM(features,classes)
 
+    prior = 0.1
     #region Linear SVM with DCF and MinDCF as C varies
+    svm = SVM(features,classes)
+    dcfs = []
+    min_dcfs = []
+    for C in np.logspace(-5,0,11):
+        w,b= svm.train(C,'linear',K=1)
+        scores = svm.scores
+
+        min_dcf =  get_min_dcf(scores, svm.LTE, prior, 1.0, 1.0)
+        min_dcfs.append(min_dcf)
+
+        dcf = get_dcf(scores, svm.LTE, prior, 1.0, 1.0,normalized=True,threshold='optimal')
+        dcfs.append(dcf)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+
+    #testing with centered data
+    svm = SVM(features,classes)
+    svm.DTR = svm.DTR - svm.DTR.mean(1,keepdims=True)
+    svm.DTE = svm.DTE - svm.DTR.mean(1,keepdims=True)
     dcfs = []
     min_dcfs = []
     for C in np.logspace(-5,0,11):
@@ -67,6 +85,7 @@ def Lab9():
     #endregion
 
     #region Polynomial Kernel SVM with DCF and MinDCF as C varies
+    svm = SVM(features,classes)
     dcfs = []
     min_dcfs = []
     for C in np.logspace(-5,0,11):
@@ -82,6 +101,7 @@ def Lab9():
     #endregion
 
     #region RBF Kernel SVM with DCF and MinDCF as C varies
+    svm = SVM(features,classes)
     gamma = [("e-4",np.exp(-4)),("e-3",np.exp(-3)),("e-2",np.exp(-2)),("e-1",np.exp(-1))]
     Cs = np.logspace(-3,2,11)
     dcfs = []

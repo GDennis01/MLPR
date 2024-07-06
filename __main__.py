@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Lab5()
     # Lab7()
     # Lab8()
-    # Lab9()
+    Lab9()
     # Lab10()
-    Lab11()
+    # Lab11()
     pass
