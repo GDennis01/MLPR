@@ -9,7 +9,7 @@ class SVM:
         """ 
         Train a SVM over a dataset
         Args:
-            C:  hyperparameter. 
+            C:  hyperparameter. Smalle values of C leads to a smoother decision boundary and larger values to a more complex boundary which tends to overfit.
             svm_type - optional: is either 'linear' or 'kernel'. Default to 'linear'
                 If linear, then the returned values are the weights w and the bias b.
                 If kernel, then the returned values is the score function fscore.

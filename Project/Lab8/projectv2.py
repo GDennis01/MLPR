@@ -6,6 +6,7 @@ from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 from Project.libs.logistic_regression import LogRegClassifier
 
+BEST_SETUP_LOGREG = {'type':'LogReg','min_dcf': np.inf,'act_dcf':None, 'l':None,'model':None,'expanded_feature':None}
 # compute both dcf and min dcf for a given logreg model. it's mainly an utility function lest we repeat code
 # prior is needed only for the weighted model
 def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,expaded_feature=False,center_data=False):
@@ -31,6 +32,12 @@ def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,ex
 
         dcf = get_dcf(scores_llr,lrc.LTE,prior,1,1,normalized=True,threshold='optimal')
         min_dcf = get_min_dcf(scores_llr,lrc.LTE,prior,1,1)
+        if min_dcf < BEST_SETUP_LOGREG['min_dcf']:
+            BEST_SETUP_LOGREG['l'] = l
+            BEST_SETUP_LOGREG['min_dcf'] = min_dcf
+            BEST_SETUP_LOGREG['act_dcf'] = dcf
+            BEST_SETUP_LOGREG['model'] = model
+            BEST_SETUP_LOGREG['expanded_feature'] = expaded_feature
         print(f'DCF: {dcf}')
         print(f'Min DCF: {min_dcf}\n')
 
@@ -53,50 +60,55 @@ def Lab8():
     features,classes=load("Project/data/trainData.txt")
 
     #region DCF for different lambdas
-    # print("Binary logreg")
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary")
+    print("Binary logreg")
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary")
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
     
     #region DCF for different lambdas with 1 sample left out
-    # prior = 0.1
-    # lambdas = np.logspace(-4,2,13)   
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",one_fiftieth=True)
+    prior = 0.1
+    lambdas = np.logspace(-4,2,13)   
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",one_fiftieth=True)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     # region DCF for different lambdas with Weighted Log-reg
-    # print("Weighted logreg")
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted")
+    print("Weighted logreg")
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted")
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Quadratic Logistic Regression 
-    # print("Binary quadratic logreg")
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
+    print("Binary quadratic logreg")
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
 
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",expaded_feature=True)
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",expaded_feature=True)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Quadratic Weighted Logistic Regression - NOT REQUESTED FOR LAB8 PROJECT
-    # print("Weighted quadratic logreg")
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
+    print("Weighted quadratic logreg")
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
 
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted",expaded_feature=True)
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted",expaded_feature=True)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Centering data to see effects of regularization term(lambda)
-    # lambdas = np.logspace(-4,2,13)
-    # prior = 0.1
+    lambdas = np.logspace(-4,2,13)
+    prior = 0.1
 
-    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
+    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
+    print(BEST_SETUP_LOGREG)
+    #append it to json
+    import json
+    with open('Project/best_setups/best_setup_logreg.json', 'w') as f:
+        json.dump(BEST_SETUP_LOGREG, f)
