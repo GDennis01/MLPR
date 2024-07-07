@@ -78,7 +78,7 @@ def Lab10():
 
     #region Loading best setups
     import json
-    with open('Project/best_setups/best_setup_gmm','w') as f:
+    with open('Project/best_setups/best_setup_gmm.json','w') as f:
         json.dump(BEST_SETUP_GMM,f)
     print(f'Best setup is obtained with class 0 with {BEST_SETUP_GMM["covType0"]} GMM with {BEST_SETUP_GMM["nc0"]} components and class 1 with {BEST_SETUP_GMM["covType1"]} GMM with {BEST_SETUP_GMM["nc1"]} components')
     print(f'MinDCF: {BEST_SETUP_GMM["min_dcf"]}')
@@ -89,7 +89,6 @@ def Lab10():
     print(f'Best setup is obtained with {best_setup_logreg["model"]} {best_setup_logreg["type"]} LogReg with lambda={best_setup_logreg["l"]} and {"quadratic" if best_setup_logreg["expanded_feature"] else "non-quadratic"} features')
     print(f'MinDCF: {best_setup_logreg["min_dcf"]}')
     print(f'Actual DCF: {best_setup_logreg["act_dcf"]}')
-    print(best_setup_logreg)
     print("------------------------------------")
     with open('Project/best_setups/best_setup_svm.json') as f:
         best_setup_svm = json.load(f)
