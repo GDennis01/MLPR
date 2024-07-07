@@ -53,6 +53,7 @@ def Lab8():
     features,classes=load("Project/data/trainData.txt")
 
     #region DCF for different lambdas
+    # print("Binary logreg")
     # lambdas = np.logspace(-4,2,13)
     # prior = 0.1
     # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary")
@@ -67,6 +68,7 @@ def Lab8():
     #endregion
 
     # region DCF for different lambdas with Weighted Log-reg
+    # print("Weighted logreg")
     # lambdas = np.logspace(-4,2,13)
     # prior = 0.1
     # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted")
@@ -74,17 +76,27 @@ def Lab8():
     #endregion
 
     #region Quadratic Logistic Regression 
-    lambdas = np.logspace(-4,2,13)
-    prior = 0.1
+    # print("Binary quadratic logreg")
+    # lambdas = np.logspace(-4,2,13)
+    # prior = 0.1
 
-    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",expaded_feature=True)
-    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",expaded_feature=True)
+    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    #endregion
+
+    #region Quadratic Weighted Logistic Regression - NOT REQUESTED FOR LAB8 PROJECT
+    # print("Weighted quadratic logreg")
+    # lambdas = np.logspace(-4,2,13)
+    # prior = 0.1
+
+    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted",expaded_feature=True)
+    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Centering data to see effects of regularization term(lambda)
-    lambdas = np.logspace(-4,2,13)
-    prior = 0.1
+    # lambdas = np.logspace(-4,2,13)
+    # prior = 0.1
 
-    dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
-    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    # dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
+    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion

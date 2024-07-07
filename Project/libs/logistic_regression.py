@@ -4,7 +4,6 @@ import numpy as np
 import scipy
 class LogRegClassifier:
     def __init__(self,D,L,one_fiftieth=False):
-        print("here")
         (self.DTR, self.LTR), (self.DTE, self.LTE) = split_db_2to1(D,L)
         if one_fiftieth:
             self.DTR = self.DTR[:,::50]
