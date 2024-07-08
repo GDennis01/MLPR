@@ -6,7 +6,7 @@ from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 from Project.libs.logistic_regression import LogRegClassifier
 
-BEST_SETUP_LOGREG = {'type':'LogReg','min_dcf': np.inf,'act_dcf':None, 'l':None,'model':None,'expanded_feature':None}
+BEST_SETUP_LOGREG = {'type':'LogReg','min_dcf': np.inf,'act_dcf':None, 'l':None,'model':None,'expanded_feature':None,'scores':None}
 # compute both dcf and min dcf for a given logreg model. it's mainly an utility function lest we repeat code
 # prior is needed only for the weighted model
 def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,expaded_feature=False,center_data=False):
@@ -38,6 +38,7 @@ def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,ex
             BEST_SETUP_LOGREG['act_dcf'] = dcf
             BEST_SETUP_LOGREG['model'] = model
             BEST_SETUP_LOGREG['expanded_feature'] = expaded_feature
+            BEST_SETUP_LOGREG['scores'] = scores_llr.tolist()
         print(f'DCF: {dcf}')
         print(f'Min DCF: {min_dcf}\n')
 

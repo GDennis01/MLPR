@@ -7,7 +7,7 @@ from Project.libs.utils import load,split_db_2to1
 from Project.libs.bayes_risk import get_dcf,get_min_dcf
 
 import numpy as np
-BEST_SETUP_GMM = {'type':'GMM','min_dcf': np.inf,'act_dcf':None, 'nc0':None,'nc1':None,'covType0':None,'covType1':None}
+BEST_SETUP_GMM = {'type':'GMM','min_dcf': np.inf,'act_dcf':None, 'nc0':None,'nc1':None,'covType0':None,'covType1':None,'scores':None}
 def polyKernel(degree, c):
     
     def polyKernelFunc(D1, D2):
@@ -74,6 +74,7 @@ def Lab10():
                         BEST_SETUP_GMM['covType1'] = covType2
                         BEST_SETUP_GMM['min_dcf'] = min_dcf
                         BEST_SETUP_GMM['act_dcf'] = dcf
+                        BEST_SETUP_GMM['scores'] = scores.tolist()
     #endregion
 
     #region Loading best setups
