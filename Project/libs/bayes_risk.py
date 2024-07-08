@@ -86,3 +86,18 @@ def compute_posteriors(log_clas_conditional_ll, prior_array):
     logJoint = log_clas_conditional_ll + vcol(np.log(prior_array))
     logPost = logJoint - scipy.special.logsumexp(logJoint, 0)
     return np.exp(logPost)
+
+"""
+Bayes Error Plot
+"""
+def bayes_error_plot(scores,labels,left,right,n_points):
+    eff_prior_log_odds = np.linspace(left,right,n_points)
+    priors = [1 / (1 + np.exp(-x)) for x in eff_prior_log_odds]
+    dcfs = np.empty((n_points,))
+    min_dcfs = np.empty((n_points,))
+    for prior in priors:
+        dcf = get_dcf(scores,labels,prior,1,1,normalized=True,threshold='optimal')
+        min_dcf = get_min_dcf(scores,labels,prior,1,1)
+        dcfs[priors.index(prior)] = dcf
+        min_dcfs[priors.index(prior)] = min_dcf
+    return eff_prior_log_odds,dcfs, min_dcfs

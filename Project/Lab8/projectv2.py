@@ -108,7 +108,6 @@ def Lab8():
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
     # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
-    print(BEST_SETUP_LOGREG)
     #append it to json
     import json
     with open('Project/best_setups/best_setup_logreg.json', 'w') as f:
