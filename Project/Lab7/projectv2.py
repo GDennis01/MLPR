@@ -23,11 +23,11 @@ def Lab7():
     Models = ["mvg","tied","naive"]
     for model in Models:
         print(f'Using model {model}')
-        gc.train(model,disable_print=True)
+        gc.train(model)
         for app in apps:
             print(f'Application {app}')
             
-            optimal_bayes_predictions,_= gc.evaluate(threshold='optimal',prior=app[0],Cfn=app[1],Cfp=app[2],disable_print=True)
+            optimal_bayes_predictions,_= gc.evaluate(threshold='optimal',prior=app[0],Cfn=app[1],Cfp=app[2])
             conf_matrix = get_confusion_matrix(optimal_bayes_predictions,gc.LTE)
   
             dcf_norm = get_dcf(gc.LLR,gc.LTE,app[0],app[1],app[2],normalized=True,threshold='optimal')
@@ -55,9 +55,9 @@ def Lab7():
         gc = GaussianClassifier(proj_data,classes)
 
         for model in Models:
-            gc.train(model,disable_print=True)
+            gc.train(model)
             for app in apps:
-                optimal_bayes_predictions,_= gc.evaluate(threshold='optimal',prior=app[0],Cfn=app[1],Cfp=app[2],disable_print=True)
+                optimal_bayes_predictions,_= gc.evaluate(threshold='optimal',prior=app[0],Cfn=app[1],Cfp=app[2])
                 
                 conf_matrix = get_confusion_matrix(optimal_bayes_predictions,gc.LTE)
 

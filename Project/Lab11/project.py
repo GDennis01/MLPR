@@ -8,43 +8,91 @@ import json
 
 TARGET_PRIOR = 0.1
 KFOLD = 5
+BEST_SETUP_SVM = np.array([])
+BEST_SETUP_GMM = np.array([])
+BEST_SETUP_LOGREG = np.array([])
+BEST_SCORE_TRANSFORMATIONS = {
+        'gmm':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'svm':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'logreg':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'fused':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None}
+        }
 
-def rbfKernel(gamma):
-
-    def rbfKernelFunc(D1, D2):
-        # Fast method to compute all pair-wise distances. Exploit the fact that |x-y|^2 = |x|^2 + |y|^2 - 2 x^T y, combined with broadcasting
-        D1Norms = (D1**2).sum(0)
-        D2Norms = (D2**2).sum(0)
-        Z = vcol(D1Norms) + vrow(D2Norms) - 2 * np.dot(D1.T, D2)
-        return np.exp(-gamma * Z)
-
-    return rbfKernelFunc
 def extract_train_val_folds_from_ary(X, idx):
     return numpy.hstack([X[jdx::KFOLD] for jdx in range(KFOLD) if jdx != idx]), X[idx::KFOLD]
-def calibrate(scores,LTE,prior_cal):
+def calibrate_kfold(model,LTE,prior_cal,fusion=False):
+    """
+    Perform a kfold calibration for a given model and a given prior(application)
+    Returns:
+    lr_scores: The log likelihood ratio scores for each fold
+    labels: The labels for each fold
+    """
+    global BEST_SETUP_SVM,BEST_SETUP_GMM,BEST_SETUP_LOGREG
+    if fusion == False:
+        scores = eval("BEST_SETUP_"+model.upper())['scores']
+    else:
+        scores_svm = BEST_SETUP_SVM['scores']
+        scores_gmm = BEST_SETUP_GMM['scores']
+        scores_logreg = BEST_SETUP_LOGREG['scores']
     lr_scores = []
     labels = []
     for idx in range(KFOLD):
-        SCAL, SVAL = extract_train_val_folds_from_ary(scores, idx)
-        LCAL, LVAL = extract_train_val_folds_from_ary(LTE, idx)
-
-        lrc = LogRegClassifier.with_details(vrow(SCAL), LCAL, vrow(SVAL), LVAL)
+        if fusion == False:
+            SCAL, SVAL = extract_train_val_folds_from_ary(scores, idx)
+            LCAL, LVAL = extract_train_val_folds_from_ary(LTE, idx)
+            SCAL = vrow(SCAL)
+            SVAL = vrow(SVAL)
+        else:
+            SCAL_GMM, SVAL_GMM = extract_train_val_folds_from_ary(scores_gmm, idx)
+            SCAL_SVM, SVAL_SVM = extract_train_val_folds_from_ary(scores_svm, idx)
+            SCAL_LOGREG, SVAL_LOGREG = extract_train_val_folds_from_ary(scores_logreg, idx)
+            LCAL, LVAL = extract_train_val_folds_from_ary(LTE, idx)
+            SCAL = np.vstack([SCAL_GMM,SCAL_SVM,SCAL_LOGREG])
+            SVAL = np.vstack([SVAL_GMM,SVAL_SVM,SVAL_LOGREG])
+        lrc = LogRegClassifier.with_details(SCAL, LCAL, SVAL, LVAL)
         w,b = lrc.train('weighted',l=0,pT=prior_cal)
 
         lr_score = lrc.llr_scores
         lr_scores.append(lr_score)
         labels.append(LVAL)
     return lr_scores, labels
+def set_best_scores_transformations(LTE,priors,model,fusion=False):
+    """
+    Compute and set best score transformation for a given model and a given prior(application).
+    Best scores are set in the global variable BEST_SCORE_TRANSFORMATIONS
+    """
+    global BEST_SCORE_TRANSFORMATIONS
+    best_act_dcf = np.inf 
+    for prior in priors:
+        lr_scores,calibrated_labels = calibrate_kfold(model,LTE,prior,fusion)
+
+        calibrated_scores = np.hstack(lr_scores)
+        calibrated_labels = np.hstack(calibrated_labels)
+
+        #computing act dcf and min dcf, then choosing the best score transformation for each model based on act dcf
+        calibrated_adcf = get_dcf(calibrated_scores,calibrated_labels,TARGET_PRIOR,normalized=True,threshold='optimal')
+        calibrated_mdcf = get_min_dcf(calibrated_scores,calibrated_labels,TARGET_PRIOR)
+        if calibrated_adcf < best_act_dcf:
+            best_act_dcf = calibrated_adcf
+            BEST_SCORE_TRANSFORMATIONS[model]['scores'] = calibrated_scores
+            BEST_SCORE_TRANSFORMATIONS[model]['labels'] = calibrated_labels
+            BEST_SCORE_TRANSFORMATIONS[model]['actdcf'] = calibrated_adcf
+            BEST_SCORE_TRANSFORMATIONS[model]['mindcf'] = calibrated_mdcf
+            BEST_SCORE_TRANSFORMATIONS[model]['prior'] = prior
+    print(f'Best act dcf for {model}: {BEST_SCORE_TRANSFORMATIONS[model]["actdcf"]} with min dcf: {BEST_SCORE_TRANSFORMATIONS[model]["mindcf"]} and training-prior: {BEST_SCORE_TRANSFORMATIONS[model]["prior"]} and target-prior: {TARGET_PRIOR}')
 def bayes_cal_plot(cal_dcfs,dcfs,min_dcfs,eff_prior_log_odds,model):
-    plt.plot(eff_prior_log_odds,cal_dcfs,label=f'{model} DCF(pre-calibration)')
+    if not model == 'fused':
+        plt.plot(eff_prior_log_odds,cal_dcfs,label=f'{model} DCF(pre-calibration)')
     plt.plot(eff_prior_log_odds,dcfs,label=f'{model} DCF(post-calibration)')
     plt.plot(eff_prior_log_odds,min_dcfs,label=f'{model} MIN DCF',linestyle='--') 
     plt.xlabel('Effective Prior Log Odds')
     plt.ylabel('(MIN) DCF')  
     plt.legend()
     plt.show()
+    # return best_act_dcf,best_min_dcf,best_prior,best_calscores,best_labels
 
 def Lab11():
+    global BEST_SETUP_SVM,BEST_SETUP_GMM,BEST_SETUP_LOGREG,BEST_SCORE_TRANSFORMATIONS
     (features,classes) = load("project/data/trainData.txt")
     _, (DTE, LTE) = split_db_2to1(features, classes)
     #importing best setups from previous labs
@@ -57,65 +105,43 @@ def Lab11():
     with open('Project/best_setups/best_setup_logreg.json') as f:
         BEST_SETUP_LOGREG = json.load(f)
         BEST_SETUP_LOGREG['scores'] = np.array(BEST_SETUP_LOGREG['scores'])
-
+    #CALIBRATION
 
     priors = np.linspace(0.1,0.9,9)
-    best_scores_transformations = {
-        'gmm':{'prior':None,'actdcf':None,'scores':None,'labels':None},
-        'svm':{'prior':None,'actdcf':None,'scores':None,'labels':None},
-        'logreg':{'prior':None,'actdcf':None,'scores':None,'labels':None}
-        }
-    for model in ['svm','gmm','logreg']:
-        best_act_dcf = np.inf 
-        current_setup = eval("BEST_SETUP_"+model.upper())
-        for prior in priors:
-            lr_scores,labels = calibrate(current_setup['scores'],LTE,prior)
 
-            calibrated_scores = np.hstack(lr_scores)
-            labels = np.hstack(labels)
+    set_best_scores_transformations(LTE,priors,'gmm')
+    set_best_scores_transformations(LTE,priors,'svm')
+    set_best_scores_transformations(LTE,priors,'logreg')
+    set_best_scores_transformations(LTE,priors,'fused',fusion=True)
 
-            #computing act dcf and min dcf, then choosing the best score transformation for each model based on act dcf
-            calibrated_adcf = get_dcf(calibrated_scores,labels,TARGET_PRIOR,normalized=True,threshold='optimal')
-            calibrated_mdcf = get_min_dcf(calibrated_scores,labels,TARGET_PRIOR)
 
-            if calibrated_adcf < best_act_dcf:
-                best_act_dcf = calibrated_adcf
-                best_scores_transformations[model]['scores'] = calibrated_scores
-                best_scores_transformations[model]['labels'] = labels
-                best_scores_transformations[model]['actdcf'] = calibrated_adcf
-                best_scores_transformations[model]['prior'] = prior
-    #fusion
-    fused_scores = []
-    fused_labels = []
-    for idx in range(KFOLD):
-        SCAL_GMM, SVAL_GMM = extract_train_val_folds_from_ary(BEST_SETUP_GMM['scores'], idx)
-        SCAL_SVM, SVAL_SVM = extract_train_val_folds_from_ary(BEST_SETUP_SVM['scores'], idx)
-        SCAL_LOGREG, SVAL_LOGREG = extract_train_val_folds_from_ary(BEST_SETUP_GMM['scores'], idx)
-        LCAL, LVAL = extract_train_val_folds_from_ary(LTE, idx)
-
-        SCAL = np.vstack([SCAL_GMM,SCAL_SVM,SCAL_LOGREG])
-        SVAL = np.vstack([SVAL_GMM,SVAL_SVM,SVAL_LOGREG])
-
-        lrc = LogRegClassifier.with_details(vrow(SCAL), LCAL, vrow(SVAL), LVAL)
-        w,b = lrc.train('weighted',l=0,pT=TARGET_PRIOR)
-
-        lr_score = lrc.llr_scores
-        fused_scores.append(lr_score)
-        fused_labels.append(LVAL)
-        
-    fused_scores = np.hstack(fused_scores)
-    fused_labels = np.hstack(fused_labels)
+    fused_scores = np.hstack(BEST_SCORE_TRANSFORMATIONS['fused']['scores'])
+    fused_labels = np.hstack(BEST_SCORE_TRANSFORMATIONS['fused']['labels'])
     fused_adcf = get_dcf(fused_scores,fused_labels,TARGET_PRIOR,normalized=True,threshold='optimal')
     fused_mdcf = get_min_dcf(fused_scores,fused_labels,TARGET_PRIOR)
-    print(f'Fused ADCF: {fused_adcf}')
-    print(f'Fused MDCF: {fused_mdcf}')
-        
+    eff_lo_priors,dcfs,mindcfs = bayes_error_plot(fused_scores,fused_labels,left=-4,right=4,n_points=10)
+    bayes_cal_plot(None,dcfs,mindcfs,eff_lo_priors,'fused')
 
-    # best_precal_dcfs = bayes_error_plot(current_setup['scores'],best_scores_transformations[model]['labels'],left=-4,right=4,n_points=100)[1]
-    # eff_lo_priors,dcfs,mindcfs = bayes_error_plot(best_scores_transformations[model]['scores'],best_scores_transformations[model]['labels'],left=-4,right=4,n_points=100)
-    # bayes_cal_plot(best_precal_dcfs,dcfs,mindcfs,eff_lo_priors,model)
-    
-    
-    print(f'Best scores transformations: {best_scores_transformations}')
+        
+    for model in ['svm','gmm','logreg']:
+        cur_scores_precal = eval("BEST_SETUP_"+model.upper())['scores']
+        cur_scores_postcal = BEST_SCORE_TRANSFORMATIONS[model]['scores']
+        cur_labels = BEST_SCORE_TRANSFORMATIONS[model]['labels']
+
+        _,best_precal_dcfs,_ = bayes_error_plot(cur_scores_precal,LTE,left=-4,right=4,n_points=10)
+        eff_lo_priors,dcfs,mindcfs = bayes_error_plot(cur_scores_postcal,cur_labels,left=-4,right=4,n_points=10)
+
+        bayes_cal_plot(best_precal_dcfs,dcfs,mindcfs,eff_lo_priors,model)
+    best_system = min(BEST_SCORE_TRANSFORMATIONS,key=lambda x:BEST_SCORE_TRANSFORMATIONS[x]['actdcf'])
+    best_system = BEST_SCORE_TRANSFORMATIONS[best_system]
+    print(best_system)
+    # EVALUATION
+    (features,classes) = load("project/data/evalData.txt")
+    (_,_), (DTE, LTE) = split_db_2to1(features, classes)
+    scores = best_system['scores']
+    min_dcf = get_min_dcf(scores,LTE,best_system['prior'])
+    act_dcf = get_dcf(scores,LTE,best_system['prior'],normalized=True,threshold='optimal')
+    print(f'Best system: {best_system} with min dcf: {min_dcf} and act dcf: {act_dcf}')
+    # print(f'Best scores transformations: {BEST_SCORE_TRANSFORMATIONS}')
  
 

@@ -55,6 +55,7 @@ class LogRegClassifier:
         Compute the log-likelihood ratio scores, that is log(p(x|H1)/p(x|H0))
         """
         empirical_prior = (self.LTR==1).sum()/self.LTR.size
+        self.empirical_prior = empirical_prior
         return self.logreg_scores - np.log(empirical_prior/(1-empirical_prior))
 
     def __logreg_binary__(self,D,L,l):
