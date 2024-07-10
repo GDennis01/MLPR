@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from Project.libs.bayes_risk import get_min_dcf
 
 # from ..libs.gaussian_classifier import GaussianClassifier
 # from .libs.utils import load,vcol,vrow
@@ -21,6 +22,9 @@ def Lab5():
     features,classes=load("Project/data/trainData.txt")
 
     gc = GaussianClassifier(features,classes)
+    best_mvg_mindcf = np.inf
+    best_mvg_model = None
+    best_pca = None
 
     #region MVG classifier
     print("MVG R:")
@@ -28,6 +32,12 @@ def Lab5():
     gc.evaluate()
     acc = gc.get_accuracy()
     print(f"Accuracy: {acc}%")
+    min_dcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+    if min_dcf < best_mvg_mindcf:
+        best_mvg_mindcf = min_dcf
+        best_mvg_model = "mvg"
+        best_pca = "without PCA"
+
     #endregion
 
     #region Naive Bayes classifier
@@ -36,6 +46,12 @@ def Lab5():
     gc.evaluate()
     acc = gc.get_accuracy()
     print(f"Accuracy: {acc}%")
+    min_dcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+    if min_dcf < best_mvg_mindcf:
+        best_mvg_mindcf = min_dcf
+        best_mvg_model = "naive"
+        best_pca = "without PCA"
+
     #endregion
 
     #region Tied Covariance classifier
@@ -44,6 +60,11 @@ def Lab5():
     gc.evaluate()
     acc = gc.get_accuracy()
     print(f"Accuracy: {acc}%")
+    min_dcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+    if min_dcf < best_mvg_mindcf:
+        best_mvg_mindcf = min_dcf
+        best_mvg_model = "tied"
+        best_pca = "without PCA"
     #endregion
 
     #region Pearson Correlation
@@ -122,6 +143,7 @@ def Lab5():
     accuracies_mvg = []
     accuracies_tied = []
     accuracies_naive = []
+    
     for i in range(1,7):
         # m=i+1
         m=i
@@ -134,18 +156,33 @@ def Lab5():
         gc.evaluate()
         acc = gc.get_accuracy()
         accuracies_mvg.append(acc)
+        mvg_mindcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+        if mvg_mindcf < best_mvg_mindcf:
+            best_mvg_mindcf = mvg_mindcf
+            best_mvg_model = "mvg"
+            best_pca = m
 
         print("\n\nTied MVG:")
         gc.train("tied")
         gc.evaluate()
         acc = gc.get_accuracy()
         accuracies_tied.append(acc)
+        mvg_mindcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+        if mvg_mindcf < best_mvg_mindcf:
+            best_mvg_mindcf = mvg_mindcf
+            best_mvg_model = "tied"
+            best_pca = m
 
         print("\n\nNaive Bayes:")
         gc.train("naive")
         gc.evaluate()
         acc = gc.get_accuracy()
         accuracies_naive.append(acc)
+        mvg_mindcf = get_min_dcf(gc.LLR,gc.LTE,0.1,1.0,1.0)
+        if mvg_mindcf < best_mvg_mindcf:
+            best_mvg_mindcf = mvg_mindcf
+            best_mvg_model = "naive"
+            best_pca = m
     print(accuracies_mvg)
     print(accuracies_tied)
     print(accuracies_naive) 
@@ -158,4 +195,8 @@ def Lab5():
     plt.tight_layout()
     plt.legend()
     plt.show()
+
+    import json
+    with open("Project/best_setups/best_mvg.json","w") as f:
+        json.dump({"model":best_mvg_model,"pca":best_pca,"min_dcf":best_mvg_mindcf},f)
     #endregion

@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
 from Project.libs.logistic_regression import LogRegClassifier
+from Project.libs.gaussian_classifier import GaussianClassifier
 
 BEST_SETUP_LOGREG = {'type':'LogReg','min_dcf': np.inf,'act_dcf':None, 'l':None,'model':None,'expanded_feature':None,'scores':None}
 # compute both dcf and min dcf for a given logreg model. it's mainly an utility function lest we repeat code
@@ -59,20 +60,19 @@ def plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs):
     
 def Lab8():
     features,classes=load("Project/data/trainData.txt")
-
     #region DCF for different lambdas
     print("Binary logreg")
     lambdas = np.logspace(-4,2,13)
     prior = 0.1
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary")
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
     
     #region DCF for different lambdas with 1 sample left out
     prior = 0.1
     lambdas = np.logspace(-4,2,13)   
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",one_fiftieth=True)
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     # region DCF for different lambdas with Weighted Log-reg
@@ -80,7 +80,7 @@ def Lab8():
     lambdas = np.logspace(-4,2,13)
     prior = 0.1
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted")
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Quadratic Logistic Regression 
@@ -89,7 +89,7 @@ def Lab8():
     prior = 0.1
 
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",expaded_feature=True)
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Quadratic Weighted Logistic Regression - NOT REQUESTED FOR LAB8 PROJECT
@@ -98,7 +98,7 @@ def Lab8():
     prior = 0.1
 
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"weighted",expaded_feature=True)
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
 
     #region Centering data to see effects of regularization term(lambda)
@@ -106,9 +106,20 @@ def Lab8():
     prior = 0.1
 
     dcfs,min_dcfs = get_dcf_mindcf_logreg(features,classes,lambdas,prior,"binary",center_data=True)
-    # plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
+    plot_dcf_vs_lambda(lambdas,dcfs,min_dcfs)
     #endregion
-    #append it to json
+
+    #region best model
     import json
+    with open('Project/best_setups/best_mvg.json') as f:
+        BEST_SETUP_MVG = json.load(f)
+        
+    if BEST_SETUP_MVG["min_dcf"] < BEST_SETUP_LOGREG["min_dcf"]:
+        print(f'Best MVG model is better than the best LogReg model')
+        print(f'Best MVG model is obtained with {BEST_SETUP_MVG["model"]} MVG and PCA: {BEST_SETUP_MVG["pca"]} with MinDCF: {BEST_SETUP_MVG["min_dcf"]}')
+    else:
+        print(f'Best LogReg model is better than the best MVG model')
+        print(f'Best LogReg model is obtained with {BEST_SETUP_LOGREG["model"]} {BEST_SETUP_LOGREG["type"]} LogReg with lambda={BEST_SETUP_LOGREG["l"]} and {"quadratic" if BEST_SETUP_LOGREG["expanded_feature"] else "non-quadratic"} features')
+
     with open('Project/best_setups/best_setup_logreg.json', 'w') as f:
         json.dump(BEST_SETUP_LOGREG, f)
