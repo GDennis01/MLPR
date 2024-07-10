@@ -46,9 +46,9 @@ def Lab10():
     for covType in ['full','diagonal']:
         print(f'{covType} GMM')
         
-        for numC in [1,2,4,8,16]:
-            gmm0 = train_GMM_LBG_EM(DTR[:,LTR==0],numC,covType,verbose=False)
-            gmm1 = train_GMM_LBG_EM(DTR[:,LTR==1],numC,covType,verbose=False)
+        for numC in [1,2,4,8,16,32]:
+            gmm0 = train_GMM_LBG_EM(DTR[:,LTR==0],numC,covType,psiEig=0.01,verbose=False)
+            gmm1 = train_GMM_LBG_EM(DTR[:,LTR==1],numC,covType,psiEig=0.01,verbose=False)
 
             gmm0_list[covType][numC] = gmm0
             gmm1_list[covType][numC] = gmm1

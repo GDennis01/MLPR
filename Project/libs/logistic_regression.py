@@ -72,14 +72,16 @@ class LogRegClassifier:
         def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
             w = v[:-1]
             b = v[-1]
+            # our score, that is, w^Tx + b
             s = np.dot(vcol(w).T, self.DTR).ravel() + b
-
+            # loss function l(-z_i*score)->log(1+exp(-z_i*score))
             loss = np.logaddexp(0, -ZTR * s)
 
             G = -ZTR / (1.0 + np.exp(ZTR * s))
             GW = (vrow(G) * self.DTR).mean(1) + l * w.ravel()
             Gb = G.mean()
             return loss.mean() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
+        # minimizing the average loss + regularization term
         vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(self.DTR.shape[0]+1))[0]
         # print ("Log-reg - lambda = %e - J*(w, b) = %e" % (l, logreg_obj_with_grad(vf)[0]))
         return vf[:-1], vf[-1]
@@ -102,8 +104,9 @@ class LogRegClassifier:
         def logreg_obj_with_grad(v): # We compute both the objective and its gradient to speed up the optimization
             w = v[:-1]
             b = v[-1]
+           
             s = np.dot(vcol(w).T, DTR).ravel() + b
-
+          
             loss = np.logaddexp(0, -ZTR * s)
             loss[ZTR>0] *= wTrue # Apply the weights to the loss computations
             loss[ZTR<0] *= wFalse
@@ -115,7 +118,7 @@ class LogRegClassifier:
             GW = (vrow(G) * DTR).sum(1) + l * w.ravel()
             Gb = G.sum()
             return loss.sum() + l / 2 * np.linalg.norm(w)**2, np.hstack([GW, np.array(Gb)])
-
+        
         vf = scipy.optimize.fmin_l_bfgs_b(logreg_obj_with_grad, x0 = np.zeros(DTR.shape[0]+1))[0]
         # print ("Weighted Log-reg (pT %e) - lambda = %e - J*(w, b) = %e" % (pT, l, logreg_obj_with_grad(vf)[0]))
         return vf[:-1], vf[-1] 
