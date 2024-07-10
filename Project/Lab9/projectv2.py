@@ -45,7 +45,7 @@ def rbfKernel(gamma):
     
 def Lab9():
     features,classes=load("project/data/trainData.txt")
-    # take only 1/10 of the data
+    # to speed up computations, only 1/10 of the data is used
     # features = features[:,:int(features.shape[1]/10)]
     # classes = classes[:int(classes.size/10)]
     prior = 0.1
@@ -70,7 +70,7 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Linear'
                 BEST_SETUP_SVM['Centered'] = False
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
 
     #testing with centered data
     svm = SVM(features,classes)
@@ -94,7 +94,7 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Linear'
                 BEST_SETUP_SVM['Centered'] = True
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region Polynomial Kernel SVM with DCF and MinDCF as C varies
@@ -118,7 +118,7 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Kernel Poly 2-1'
                 BEST_SETUP_SVM['Centered'] = False
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region RBF Kernel SVM with DCF and MinDCF as C varies
@@ -152,14 +152,13 @@ def Lab9():
                 BEST_SETUP_SVM['scores'] = scores.tolist()
         plt.plot(Cs,dcfs,label=f'DCF with Gamma: {l}')
         plt.plot(Cs,min_dcfs,label=f'MinDCF with Gamma: {l}')
-    print(f'Best setup: {best_setup}')
-    plt.xscale('log',base=10)
-    plt.xlabel('C')
-    plt.ylabel('DCF')
-    plt.title('DCF vs C')
-    plt.legend()
-    plt.show()
-
+        plt.xscale('log',base=10)
+        plt.xlabel('C')
+        plt.ylabel('DCF')
+        plt.title('DCF vs C')
+        plt.legend()
+        plt.show()
+    print(f'Best setup: {BEST_SETUP_SVM["mode"]} with MinDCF: {BEST_SETUP_SVM["min_dcf"]} and Actual DCF: {BEST_SETUP_SVM["act_dcf"]} with C: {BEST_SETUP_SVM["C"]} and Gamma: {BEST_SETUP_SVM["gamma"]}')
     import json
     with open('Project/best_setups/best_setup_svm.json', 'w') as f:
         json.dump(BEST_SETUP_SVM, f)

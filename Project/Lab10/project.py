@@ -25,6 +25,22 @@ def rbfKernel(gamma):
         return np.exp(-gamma * Z)
 
     return rbfKernelFunc
+def plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,cvtype1,cvtype2):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = np.array([1,2,4,8,16,32])
+    y = np.array([1,2,4,8,16,32])
+    X, Y = np.meshgrid(x, y)
+    Z = np.array([[min_dcf_nc_type[idx_covtype[cvtype1],idx_covtype[cvtype2],idx_nc[x],idx_nc[y]] for x in x] for y in y])
+    ax.plot_surface(X, Y, Z, label=f'Class 0 {cvtype1} GMM with Class 1 {cvtype2} GMM')
+    ax.set_xlabel('Number of components for class 0')
+    ax.set_ylabel('Number of components for class 1')
+    ax.set_zlabel('MinDCF')
+    plt.xticks(x)
+    plt.yticks(y)
+    plt.legend()
+    plt.show()
 
 
 
@@ -39,7 +55,6 @@ def Lab10():
 
 
     #region Full and Diagonal GMM
-    #FIXME: with 32 it crashes when trying to invert the covariance matrix,
     gmm0_list = {'full':{},'diagonal':{}}
     gmm1_list = {'full':{},'diagonal':{}}
 
@@ -47,6 +62,7 @@ def Lab10():
         print(f'{covType} GMM')
         
         for numC in [1,2,4,8,16,32]:
+        # for numC in [1,2,4,8]:
             gmm0 = train_GMM_LBG_EM(DTR[:,LTR==0],numC,covType,psiEig=0.01,verbose=False)
             gmm1 = train_GMM_LBG_EM(DTR[:,LTR==1],numC,covType,psiEig=0.01,verbose=False)
 
@@ -54,6 +70,9 @@ def Lab10():
             gmm1_list[covType][numC] = gmm1
     best_setup_gmm = []
     best_min_dcf = np.inf
+    min_dcf_nc_type = np.zeros((2,2,6,6))
+    idx_covtype = {'full':0,'diagonal':1}
+    idx_nc = {1:0,2:1,4:2,8:3,16:4,32:5}
     for gmm0_elem in gmm0_list[covType]:   
         for gmm1_elem in gmm1_list[covType]:
             for covType in ['full','diagonal']:
@@ -65,6 +84,9 @@ def Lab10():
                     scores = gmm_scores(gmm0,gmm1,DTE)
                     dcf = get_dcf(scores,LTE,prior,1.0,1.0,normalized=True,threshold='optimal')
                     min_dcf = get_min_dcf(scores,LTE,prior,1.0,1.0)
+                    # print(f'MinDCF: {min_dcf} Actual DCF: {dcf} with {covType} GMM with {gmm0_elem} and {covType2} GMM with {gmm1_elem} components')
+                    # min_dcf_nc_type[covType,covType2,gmm0_elem,gmm1_elem] = min_dcf
+                    min_dcf_nc_type[idx_covtype[covType],idx_covtype[covType2],idx_nc[gmm0_elem],idx_nc[gmm1_elem]] = min_dcf
                     if min_dcf < best_min_dcf:
                         best_min_dcf = min_dcf
                         best_setup_gmm = [covType,covType2,gmm0_elem,gmm1_elem,min_dcf,dcf]  
@@ -76,7 +98,12 @@ def Lab10():
                         BEST_SETUP_GMM['act_dcf'] = dcf
                         BEST_SETUP_GMM['scores'] = scores.tolist()
     #endregion
-
+    print(min_dcf_nc_type)
+    
+    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','full')
+    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','diagonal')
+    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','full')
+    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','diagonal')
     #region Loading best setups
     import json
     with open('Project/best_setups/best_setup_gmm.json','w') as f:
