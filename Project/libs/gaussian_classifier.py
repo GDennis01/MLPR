@@ -1,4 +1,3 @@
-from __future__ import print_function
 from Project.libs.utils import split_db_2to1,cov_m,cov_within_classes,vcol,vrow
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold
 import numpy as np

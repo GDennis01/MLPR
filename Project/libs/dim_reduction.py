@@ -1,5 +1,9 @@
 from Project.libs.utils import split_db_2to1,cov_m,cov_within_classes,vcol,vrow
 import numpy as np
+
+# the covariance matrix of the dataset can be decomposed, by SVD, into U, S, Vh
+# where U are the eigenvectors of the covariance matrix, in order of decreasing eigenvalues, and S are the associated eigenvalues
+# vh is the transpose of the eigenvectors
 def PCA(dataset,n_dim,specif_dim=None):
     mu_ds = dataset.mean(1)
     centered_dataset = dataset - vcol(mu_ds)
@@ -12,6 +16,7 @@ def PCA(dataset,n_dim,specif_dim=None):
         P = U[:,specif_dim:specif_dim+1]
 
     return P.T
+# LDA is based on maximing the
 def LDA(cov_wt,cov_bt,m):
     U,s,_ = np.linalg.svd(cov_wt)
     P1 = (U@  np.diag(1.0/(s**0.5)))@ U.T 

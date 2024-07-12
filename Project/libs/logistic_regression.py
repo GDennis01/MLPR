@@ -1,4 +1,3 @@
-from __future__ import print_function
 from Project.libs.utils import split_db_2to1,vcol,vrow
 import numpy as np
 import scipy
