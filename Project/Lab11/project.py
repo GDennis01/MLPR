@@ -20,7 +20,7 @@ BEST_SCORE_TRANSFORMATIONS = {
 
 def extract_train_val_folds_from_ary(X, idx):
     return numpy.hstack([X[jdx::KFOLD] for jdx in range(KFOLD) if jdx != idx]), X[idx::KFOLD]
-def calibrate_kfold(model,LTE,prior_cal,fusion=False,eval=False,**kwargs):
+def calibrate_kfold(model,LTE,prior_cal,fusion=False,evaluation=False,**kwargs):
     """
     Perform a kfold calibration for a given model and a given prior(application)
     Returns:
@@ -28,7 +28,7 @@ def calibrate_kfold(model,LTE,prior_cal,fusion=False,eval=False,**kwargs):
     labels: The labels for each fold
     """
     global BEST_SETUP_SVM,BEST_SETUP_GMM,BEST_SETUP_LOGREG
-    if eval == False:
+    if evaluation == False:
         if fusion == False:
             scores = eval("BEST_SETUP_"+model.upper())['scores']
         else:
@@ -107,7 +107,8 @@ def bayes_cal_plot(cal_dcfs,dcfs,min_dcfs,eff_prior_log_odds,model,cal=True):
     if cal and not model == 'fused':
         plt.plot(eff_prior_log_odds,cal_dcfs,label=f'{model} DCF{label_pre}')
     plt.plot(eff_prior_log_odds,dcfs,label=f'{model} DCF{label_post}')
-    plt.plot(eff_prior_log_odds,min_dcfs,label=f'{model} MIN DCF',linestyle='--') 
+    if min_dcfs is not None:
+        plt.plot(eff_prior_log_odds,min_dcfs,label=f'{model} MIN DCF',linestyle='--') 
     plt.xlabel('Effective Prior Log Odds')
     plt.ylabel('(MIN) DCF')  
     plt.legend()
@@ -158,17 +159,18 @@ def Lab11():
     best_system = BEST_SCORE_TRANSFORMATIONS[best_system]
     best_system['name'] = best_system_name
     with open('Project/best_setups/best_setup.json','w') as f:
-        best_system['scores'] = best_system['scores'].tolist()
-        best_system['labels'] = best_system['labels'].tolist()
-        best_system['w'] = best_system['w'].tolist()
-        json.dump(best_system,f)
+        # best_system['scores'] = best_system['scores'].tolist()
+        # best_system['labels'] = best_system['labels'].tolist()
+        # best_system['w'] = best_system['w'].tolist()
+        obj = {'name':best_system['name'],'prior':best_system['prior']}
+        json.dump(obj,f)
 def compute_scores(model,setup,features):
     match model:
         case 'logreg':
             if setup['expanded_feature']:
                 features = LogRegClassifier.__quadratic_feature_expansion__(features)
             w,b = setup['w'],setup['b']
-            scores = w.T@features+b
+            scores = w.T@features+b-np.log(TARGET_PRIOR/(1-TARGET_PRIOR))
         case 'svm':
             w,b = setup['w'],setup['b']
             scores = w.T@features+b
@@ -186,52 +188,75 @@ def Lab11_eval():
     with open('Project/best_setups/best_setup.json') as f:
         best_system = json.load(f)
     with open('Project/best_setups/best_setup_logreg.json') as f:
-        best_setup_logreg = json.load(f)
-        w,b = np.array(best_setup_logreg['w']),np.array(best_setup_logreg['b'])
-        best_setup_logreg['w'] = w
-        best_setup_logreg['b'] = b
+        best_setup_logreg_eval = json.load(f)
+        w,b = np.array(best_setup_logreg_eval['w']),np.array(best_setup_logreg_eval['b'])
+        best_setup_logreg_eval['w'] = w
+        best_setup_logreg_eval['b'] = b
     with open('Project/best_setups/best_setup_svm.json') as f:
-        best_setup_svm = json.load(f)
-        w,b = np.array(best_setup_svm['w']),np.array(best_setup_svm['b'])
-        best_setup_svm['w'] = w
-        best_setup_svm['b'] = b
+        best_setup_svm_eval = json.load(f)
+        w,b = np.array(best_setup_svm_eval['w']),np.array(best_setup_svm_eval['b'])
+        best_setup_svm_eval['w'] = w
+        best_setup_svm_eval['b'] = b
     with open('Project/best_setups/best_setup_gmm.json') as f:
-        best_setup_gmm = json.load(f)
-        gmm0 = best_setup_gmm['gmm0']
-        gmm1 = best_setup_gmm['gmm1']
+        best_setup_gmm_eval = json.load(f)
+        gmm0 = best_setup_gmm_eval['gmm0']
+        gmm1 = best_setup_gmm_eval['gmm1']
         gmm0 = [(w,np.array(m),np.array(C)) for w,m,C in gmm0]
         gmm1 = [(w,np.array(m),np.array(C)) for w,m,C in gmm1]
-        best_setup_gmm['gmm0'] = gmm0
-        best_setup_gmm['gmm1'] = gmm1
+        best_setup_gmm_eval['gmm0'] = gmm0
+        best_setup_gmm_eval['gmm1'] = gmm1
+    with open('Project/best_setups/quadratic_weighted_logreg.json') as f:
+        qwl = json.load(f)
+        # print(qwl)
+        for elem in qwl:
+            # print(elem)
+            elem['w'] = np.array(elem['w'])
 
 
     (features,classes) = load("project/data/evalData.txt")
     (_,_), (DTE, LTE) = split_db_2to1(features, classes)
 
-    best_setups = {'logreg':best_setup_logreg,'svm':best_setup_svm,'gmm':best_setup_gmm} 
+    best_setups = {'logreg':best_setup_logreg_eval,'svm':best_setup_svm_eval,'gmm':best_setup_gmm_eval} 
     fused_scores =[]
     fused_labels = []
+
+    #bayes error plot for delivered system
+    best_min_dcf_bestsystem = np.inf
+    #bayes error plot for all systems
     for model in ['logreg','svm','gmm']:
         scores = compute_scores(model,best_setups[model],features)
-        min_dcf = get_min_dcf(scores,classes,TARGET_PRIOR,1.0,1.0)
-        act_dcf = get_dcf(scores,classes,TARGET_PRIOR,1.0,1.0,normalized=True,threshold='optimal')
-        print(f'{model}: MinDCF: {min_dcf}')
-        print(f'{model}: Actual DCF: {act_dcf}')
-        eff_prior_log_odds,dcfs,mindcfs = bayes_error_plot(scores,classes,left=-4,right=4,n_points=10)
-        bayes_cal_plot(None,dcfs,mindcfs,eff_prior_log_odds,model,cal=False)
+        fused_scores.append(scores)
+        fused_labels.append(classes)
+        #calibrating scores
+        cal_scores,cal_labels,_,_,_ = calibrate_kfold(model,classes,best_system['prior'],fusion=False,evaluation=True,scores=scores)
+        cal_scores = np.hstack(cal_scores)
+        cal_labels = np.hstack(cal_labels)
 
-        # _,_,_,_,llrscores= calibrate_kfold(model,classes,best_system['prior'],fusion=False,eval=True,scores=scores)
-        # fused_scores.append(llrscores)
-        # fused_labels.append(classes)
-        # min_dcf = get_min_dcf(llrscores,classes,TARGET_PRIOR)
-        # act_dcf = get_dcf(llrscores,classes,TARGET_PRIOR,1.0,1.0,normalized=True,threshold='optimal')
-        # print(f'{model}: MinDCF: {min_dcf}')
-        # print(f'{model}: Actual DCF: {act_dcf}')
+        eff_prior_log_odds,dcfs,mindcfs = bayes_error_plot(cal_scores,cal_labels,left=-4,right=4,n_points=10)
+        #showing only actdcf in bayes error plot
+        bayes_cal_plot(None,dcfs,None,eff_prior_log_odds,model,cal=False)
+        #showing also min dcf in bayes error plot
+        bayes_cal_plot(None,dcfs,mindcfs,eff_prior_log_odds,model,cal=False)
+        #dcf and min dcf for each model
+        act_dcf_cal = get_dcf(cal_scores,cal_labels,TARGET_PRIOR,1.0,1.0,normalized=True,threshold='optimal')
+        min_dcf_cal = get_min_dcf(cal_scores,cal_labels,TARGET_PRIOR)
+        if model == best_system['name']:
+            best_min_dcf_bestsystem = min_dcf_cal
+        print(f'{model}: Calibrated MinDCF: {min_dcf_cal} for model {model} ')
+        print(f'{model}: Calibrated Actual DCF: {act_dcf_cal} for model {model}')
     
-    fused_scores = np.vstack(fused_scores)
-    fused_labels = np.vstack(fused_labels)
-    lrc = LogRegClassifier.with_details(fused_scores, fused_labels, fused_scores, fused_labels)
-    w,b = lrc.train('weighted',l=0,pT=0.1)
+    #retraining the quadratic weighted logreg model to see how it fares against the best system in terms of mindcf
+    for elem in qwl:
+        w = elem['w']
+        b = elem['b']
+        l = elem['lambda']
+        expanded_features = LogRegClassifier.__quadratic_feature_expansion__(features)
+        scores = w.T@expanded_features+b - np.log(TARGET_PRIOR/(1-TARGET_PRIOR))
+        min = get_min_dcf(scores,classes,TARGET_PRIOR)
+        print(f'Quadratic Weighted LogReg: MinDCF: {min} for lambda: {l}')
+    print(f'Best system: {best_system["name"]} with MinDCF: {best_min_dcf_bestsystem}')
+
+
 
  
 

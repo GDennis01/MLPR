@@ -8,6 +8,7 @@ from Project.libs.logistic_regression import LogRegClassifier
 from Project.libs.gaussian_classifier import GaussianClassifier
 
 BEST_SETUP_LOGREG = {'type':'LogReg','min_dcf': np.inf,'act_dcf':None, 'l':None,'model':None,'expanded_feature':None,'w':None,'b':None,'scores':None}
+QWL = []
 # compute both dcf and min dcf for a given logreg model. it's mainly an utility function lest we repeat code
 # prior is needed only for the weighted model
 def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,expaded_feature=False,center_data=False):
@@ -33,6 +34,8 @@ def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,ex
 
         dcf = get_dcf(scores_llr,lrc.LTE,prior,1,1,normalized=True,threshold='optimal')
         min_dcf = get_min_dcf(scores_llr,lrc.LTE,prior,1,1)
+        if model == "weighted" and expaded_feature:
+            QWL.append({"lambda":l,"w":w,"b":b})
         if min_dcf < BEST_SETUP_LOGREG['min_dcf']:
             BEST_SETUP_LOGREG['l'] = l
             BEST_SETUP_LOGREG['min_dcf'] = min_dcf
@@ -126,3 +129,7 @@ def Lab8():
     with open('Project/best_setups/best_setup_logreg.json', 'w') as f:
         BEST_SETUP_LOGREG['w'] = BEST_SETUP_LOGREG['w'].tolist()
         json.dump(BEST_SETUP_LOGREG, f)
+    with open('Project/best_setups/quadratic_weighted_logreg.json', 'w') as f:
+        for qwl in QWL:
+            qwl['w'] = qwl['w'].tolist()
+        json.dump(QWL, f)
