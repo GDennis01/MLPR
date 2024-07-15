@@ -44,10 +44,6 @@ def plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,cvtype1,cvtype2):
 
 
 
-def gmm_scores(gmm0,gmm1,DTE):
-    scores0 = logpdf_GMM(DTE, gmm0)
-    scores1 = logpdf_GMM(DTE, gmm1)
-    return scores1 - scores0
 def Lab10():
     (features,classes) = load("project/data/trainData.txt")
     (DTR, LTR), (DTE, LTE) = split_db_2to1(features, classes)
@@ -68,7 +64,7 @@ def Lab10():
 
             gmm0_list[covType][numC] = gmm0
             gmm1_list[covType][numC] = gmm1
-    best_setup_gmm = []
+
     best_min_dcf = np.inf
     min_dcf_nc_type = np.zeros((2,2,6,6))
     idx_covtype = {'full':0,'diagonal':1}
@@ -80,7 +76,6 @@ def Lab10():
                 for covType2 in ['full','diagonal']:
                     # print(f'Trying {covType} GMM with {gmm0_elem} and {gmm1_elem} components')
                     gmm1 = gmm1_list[covType2][gmm1_elem]
-
                     scores = gmm_scores(gmm0,gmm1,DTE)
                     dcf = get_dcf(scores,LTE,prior,1.0,1.0,normalized=True,threshold='optimal')
                     min_dcf = get_min_dcf(scores,LTE,prior,1.0,1.0)
@@ -89,7 +84,7 @@ def Lab10():
                     min_dcf_nc_type[idx_covtype[covType],idx_covtype[covType2],idx_nc[gmm0_elem],idx_nc[gmm1_elem]] = min_dcf
                     if min_dcf < best_min_dcf:
                         best_min_dcf = min_dcf
-                        best_setup_gmm = [covType,covType2,gmm0_elem,gmm1_elem,min_dcf,dcf]  
+ 
                         BEST_SETUP_GMM['nc0'] = gmm0_elem
                         BEST_SETUP_GMM['nc1'] = gmm1_elem
                         BEST_SETUP_GMM['covType0'] = covType
@@ -97,16 +92,23 @@ def Lab10():
                         BEST_SETUP_GMM['min_dcf'] = min_dcf
                         BEST_SETUP_GMM['act_dcf'] = dcf
                         BEST_SETUP_GMM['scores'] = scores.tolist()
+                        BEST_SETUP_GMM['gmm0'] = gmm0
+                        BEST_SETUP_GMM['gmm1'] = gmm1
+
     #endregion
-    print(min_dcf_nc_type)
+    # print(min_dcf_nc_type)
     
-    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','full')
-    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','diagonal')
-    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','full')
-    plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','diagonal')
+    # plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','full')
+    # plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'full','diagonal')
+    # plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','full')
+    # plot_nc_covtype_dcf(idx_covtype,idx_nc,min_dcf_nc_type,'diagonal','diagonal')
     #region Loading best setups
     import json
     with open('Project/best_setups/best_setup_gmm.json','w') as f:
+        gmm0_json = [(w,mu.tolist(),C.tolist()) for w,mu,C in BEST_SETUP_GMM['gmm0']]
+        gmm1_json = [(w,mu.tolist(),C.tolist()) for w,mu,C in BEST_SETUP_GMM['gmm1']]
+        BEST_SETUP_GMM['gmm0'] = gmm0_json
+        BEST_SETUP_GMM['gmm1'] = gmm1_json
         json.dump(BEST_SETUP_GMM,f)
     print(f'Best setup is obtained with class 0 with {BEST_SETUP_GMM["covType0"]} GMM with {BEST_SETUP_GMM["nc0"]} components and class 1 with {BEST_SETUP_GMM["covType1"]} GMM with {BEST_SETUP_GMM["nc1"]} components')
     print(f'MinDCF: {BEST_SETUP_GMM["min_dcf"]}')

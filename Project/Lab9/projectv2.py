@@ -6,7 +6,7 @@ from Project.libs.svm import SVM
 from prettytable import PrettyTable
 from Project.libs.utils import load,vcol,vrow,split_db_2to1
 from Project.libs.bayes_risk import compute_optimal_Bayes_binary_threshold,get_dcf,get_min_dcf,get_confusion_matrix
-BEST_SETUP_SVM = {'type':'SVM','min_dcf': np.inf,'act_dcf':None, 'C':None,'mode':None,'gamma':None,'Centered':None,'scores':None}
+BEST_SETUP_SVM = {'type':'SVM','min_dcf': np.inf,'act_dcf':None, 'C':None,'mode':None,'gamma':None,'Centered':None,'scores':None,'w':None,'b':None}
 def plot_dcf_vs_c(lambdas,dcfs,min_dcfs):
     plt.figure()
     plt.plot(lambdas,dcfs,label='DCFs')
@@ -70,7 +70,10 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Linear'
                 BEST_SETUP_SVM['Centered'] = False
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+                BEST_SETUP_SVM['w'] = w.tolist()
+                BEST_SETUP_SVM['b'] = b.tolist()
+    print(BEST_SETUP_SVM['w'])
+    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
 
     #testing with centered data
     svm = SVM(features,classes)
@@ -94,7 +97,9 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Linear'
                 BEST_SETUP_SVM['Centered'] = True
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+                BEST_SETUP_SVM['w'] = w.tolist()
+                BEST_SETUP_SVM['b'] = b.tolist()
+    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region Polynomial Kernel SVM with DCF and MinDCF as C varies
@@ -118,7 +123,9 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Kernel Poly 2-1'
                 BEST_SETUP_SVM['Centered'] = False
                 BEST_SETUP_SVM['scores'] = scores.tolist()
-    plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
+                BEST_SETUP_SVM['w'] = w.tolist()
+                BEST_SETUP_SVM['b'] = b.tolist()
+    # plot_dcf_vs_c(np.logspace(-5,0,11),dcfs,min_dcfs)
     #endregion
 
     #region RBF Kernel SVM with DCF and MinDCF as C varies
@@ -150,6 +157,8 @@ def Lab9():
                 BEST_SETUP_SVM['mode'] = 'Kernel RBF'
                 BEST_SETUP_SVM['Centered'] = False
                 BEST_SETUP_SVM['scores'] = scores.tolist()
+                BEST_SETUP_SVM['w'] = w.tolist()
+                BEST_SETUP_SVM['b'] = b.tolist()
         plt.plot(Cs,dcfs,label=f'DCF with Gamma: {l}')
         plt.plot(Cs,min_dcfs,label=f'MinDCF with Gamma: {l}')
         plt.xscale('log',base=10)

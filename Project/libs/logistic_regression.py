@@ -49,11 +49,14 @@ class LogRegClassifier:
         """
         return np.dot(self.w.T,self.DTE) + self.b
     @property
-    def llr_scores(self):
+    def llr_scores(self,pt=None):
         """
         Compute the log-likelihood ratio scores, that is log(p(x|H1)/p(x|H0))
         """
-        empirical_prior = (self.LTR==1).sum()/self.LTR.size
+        if pt is None:
+            empirical_prior = (self.LTR==1).sum()/self.LTR.size
+        else:
+            empirical_prior = pt
         self.empirical_prior = empirical_prior
         return self.logreg_scores - np.log(empirical_prior/(1-empirical_prior))
 

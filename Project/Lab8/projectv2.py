@@ -20,7 +20,7 @@ def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,ex
         if center_data:
             lrc.DTR = lrc.DTR - lrc.DTR.mean(1,keepdims=True)
             lrc.DTE = lrc.DTE - lrc.DTR.mean(1,keepdims=True)
-        lrc.train(model,l=l,expaded_feature=expaded_feature,pT=prior)
+        w,b=lrc.train(model,l=l,expaded_feature=expaded_feature,pT=prior)
 
         empirical_prior = (lrc.LTR == 1).sum()/lrc.LTR.size
 
@@ -40,8 +40,8 @@ def get_dcf_mindcf_logreg(D,L,lambdas,prior,model="binary",one_fiftieth=False,ex
             BEST_SETUP_LOGREG['model'] = model
             BEST_SETUP_LOGREG['expanded_feature'] = expaded_feature
             BEST_SETUP_LOGREG['scores'] = scores_llr.tolist()
-            BEST_SETUP_LOGREG['w'] = lrc.w.tolist()
-            BEST_SETUP_LOGREG['b'] = lrc.b.tolist()
+            BEST_SETUP_LOGREG['w'] = w
+            BEST_SETUP_LOGREG['b'] = b
         print(f'DCF: {dcf}')
         print(f'Min DCF: {min_dcf}\n')
 
@@ -124,4 +124,5 @@ def Lab8():
         print(f'Best LogReg model is obtained with {BEST_SETUP_LOGREG["model"]} {BEST_SETUP_LOGREG["type"]} LogReg with lambda={BEST_SETUP_LOGREG["l"]} and {"quadratic" if BEST_SETUP_LOGREG["expanded_feature"] else "non-quadratic"} features')
 
     with open('Project/best_setups/best_setup_logreg.json', 'w') as f:
+        BEST_SETUP_LOGREG['w'] = BEST_SETUP_LOGREG['w'].tolist()
         json.dump(BEST_SETUP_LOGREG, f)

@@ -16,6 +16,11 @@ import matplotlib.pyplot as plt
 from Project.libs.utils import vcol, vrow,split_db_2to1,compute_mu_C
 
 
+def gmm_scores(gmm0,gmm1,DTE):
+    scores0 = logpdf_GMM(DTE, gmm0)
+    scores1 = logpdf_GMM(DTE, gmm1)
+    return scores1 - scores0
+    
 def logpdf_GAU_ND(x, mu, C): # Fast version from Lab 4
     P = numpy.linalg.inv(C)
     return -0.5*x.shape[0]*numpy.log(numpy.pi*2) - 0.5*numpy.linalg.slogdet(C)[1] - 0.5 * ((x-mu) * (P @ (x-mu))).sum(0)
