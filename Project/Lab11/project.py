@@ -12,10 +12,10 @@ BEST_SETUP_SVM = np.array([])
 BEST_SETUP_GMM = np.array([])
 BEST_SETUP_LOGREG = np.array([])
 BEST_SCORE_TRANSFORMATIONS = {
-        'gmm':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
-        'svm':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
-        'logreg':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
-        'fused':{'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None}
+        'gmm':{'name':None,'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'svm':{'name':None,'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'logreg':{'name':None,'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None},
+        'fused':{'name':None,'prior':None,'actdcf':None,'mindcf':None,'scores':None,'labels':None}
         }
 
 def extract_train_val_folds_from_ary(X, idx):
@@ -133,8 +133,10 @@ def Lab11():
 
         bayes_cal_plot(best_precal_dcfs,dcfs,mindcfs,eff_lo_priors,model)
     best_system = min(BEST_SCORE_TRANSFORMATIONS,key=lambda x:BEST_SCORE_TRANSFORMATIONS[x]['actdcf'])
+    best_system_name = best_system
     best_system = BEST_SCORE_TRANSFORMATIONS[best_system]
-    print(best_system)
+    best_system['name'] = best_system_name
+    
     # EVALUATION
     (features,classes) = load("project/data/evalData.txt")
     (_,_), (DTE, LTE) = split_db_2to1(features, classes)

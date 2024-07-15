@@ -2,10 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from Project.libs.bayes_risk import get_min_dcf
-
-# from ..libs.gaussian_classifier import GaussianClassifier
-# from .libs.utils import load,vcol,vrow
-# from ..libs.dim_reduction import PCA
 from Project.libs.gaussian_classifier import GaussianClassifier
 from Project.libs.utils import load,vcol,vrow
 from Project.libs.dim_reduction import PCA
