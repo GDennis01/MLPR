@@ -20,7 +20,7 @@ BEST_SCORE_TRANSFORMATIONS = {
 
 def extract_train_val_folds_from_ary(X, idx):
     return numpy.hstack([X[jdx::KFOLD] for jdx in range(KFOLD) if jdx != idx]), X[idx::KFOLD]
-def calibrate_kfold(model,LTE,prior_cal,fusion=False):
+def calibrate_kfold(model,LTE,prior_cal,fusion=False,eval=False,**kwargs):
     """
     Perform a kfold calibration for a given model and a given prior(application)
     Returns:
@@ -28,12 +28,21 @@ def calibrate_kfold(model,LTE,prior_cal,fusion=False):
     labels: The labels for each fold
     """
     global BEST_SETUP_SVM,BEST_SETUP_GMM,BEST_SETUP_LOGREG
-    if fusion == False:
-        scores = eval("BEST_SETUP_"+model.upper())['scores']
+    if eval == False:
+        if fusion == False:
+            scores = eval("BEST_SETUP_"+model.upper())['scores']
+        else:
+            scores_svm = BEST_SETUP_SVM['scores']
+            scores_gmm = BEST_SETUP_GMM['scores']
+            scores_logreg = BEST_SETUP_LOGREG['scores']
     else:
-        scores_svm = BEST_SETUP_SVM['scores']
-        scores_gmm = BEST_SETUP_GMM['scores']
-        scores_logreg = BEST_SETUP_LOGREG['scores']
+        if fusion == False:
+            scores = kwargs.get('scores')
+        else:
+            scores_svm = kwargs.get('scores_svm')
+            scores_gmm = kwargs.get('scores_gmm')
+            scores_logreg = kwargs.get('scores_logreg')
+
     lr_scores = []
     labels = []
     for idx in range(KFOLD):
@@ -92,10 +101,12 @@ def set_best_scores_transformations(LTE,priors,model,fusion=False):
             BEST_SCORE_TRANSFORMATIONS[model]['w'] = w
             BEST_SCORE_TRANSFORMATIONS[model]['b'] = b
     print(f'Best act dcf for {model}: {BEST_SCORE_TRANSFORMATIONS[model]["actdcf"]} with min dcf: {BEST_SCORE_TRANSFORMATIONS[model]["mindcf"]} and training-prior: {BEST_SCORE_TRANSFORMATIONS[model]["prior"]} and target-prior: {TARGET_PRIOR}')
-def bayes_cal_plot(cal_dcfs,dcfs,min_dcfs,eff_prior_log_odds,model):
-    if not model == 'fused':
-        plt.plot(eff_prior_log_odds,cal_dcfs,label=f'{model} DCF(pre-calibration)')
-    plt.plot(eff_prior_log_odds,dcfs,label=f'{model} DCF(post-calibration)')
+def bayes_cal_plot(cal_dcfs,dcfs,min_dcfs,eff_prior_log_odds,model,cal=True):
+    label_pre = '(pre-calibration)' if cal else ''
+    label_post = '(post-calibration)' if cal else ''
+    if cal and not model == 'fused':
+        plt.plot(eff_prior_log_odds,cal_dcfs,label=f'{model} DCF{label_pre}')
+    plt.plot(eff_prior_log_odds,dcfs,label=f'{model} DCF{label_post}')
     plt.plot(eff_prior_log_odds,min_dcfs,label=f'{model} MIN DCF',linestyle='--') 
     plt.xlabel('Effective Prior Log Odds')
     plt.ylabel('(MIN) DCF')  
@@ -151,24 +162,76 @@ def Lab11():
         best_system['labels'] = best_system['labels'].tolist()
         best_system['w'] = best_system['w'].tolist()
         json.dump(best_system,f)
+def compute_scores(model,setup,features):
+    match model:
+        case 'logreg':
+            if setup['expanded_feature']:
+                features = LogRegClassifier.__quadratic_feature_expansion__(features)
+            w,b = setup['w'],setup['b']
+            scores = w.T@features+b
+        case 'svm':
+            w,b = setup['w'],setup['b']
+            scores = w.T@features+b
+        case 'gmm':
+            gmm0 = setup['gmm0']
+            gmm1 = setup['gmm1']
+            gmm0 = [(w,np.array(m),np.array(C)) for w,m,C in gmm0]
+            gmm1 = [(w,np.array(m),np.array(C)) for w,m,C in gmm1]
+            scores = gmm_scores(gmm0,gmm1,features)
+    return scores
+    
 def Lab11_eval():
     # EVALUATION
+    #data setup
     with open('Project/best_setups/best_setup.json') as f:
         best_system = json.load(f)
     with open('Project/best_setups/best_setup_logreg.json') as f:
         best_setup_logreg = json.load(f)
+        w,b = np.array(best_setup_logreg['w']),np.array(best_setup_logreg['b'])
+        best_setup_logreg['w'] = w
+        best_setup_logreg['b'] = b
     with open('Project/best_setups/best_setup_svm.json') as f:
         best_setup_svm = json.load(f)
+        w,b = np.array(best_setup_svm['w']),np.array(best_setup_svm['b'])
+        best_setup_svm['w'] = w
+        best_setup_svm['b'] = b
     with open('Project/best_setups/best_setup_gmm.json') as f:
         best_setup_gmm = json.load(f)
+        gmm0 = best_setup_gmm['gmm0']
+        gmm1 = best_setup_gmm['gmm1']
+        gmm0 = [(w,np.array(m),np.array(C)) for w,m,C in gmm0]
+        gmm1 = [(w,np.array(m),np.array(C)) for w,m,C in gmm1]
+        best_setup_gmm['gmm0'] = gmm0
+        best_setup_gmm['gmm1'] = gmm1
+
+
     (features,classes) = load("project/data/evalData.txt")
     (_,_), (DTE, LTE) = split_db_2to1(features, classes)
 
-    w,b = np.array(best_system['w']),np.array(best_system['b'])
-    print(w.shape)
-    print(DTE.shape)
-    scores = w.T@DTE+b
-    print(f'Best system: {best_system} with min dcf: {min_dcf} and act dcf: {act_dcf}')
-    # print(f'Best scores transformations: {BEST_SCORE_TRANSFORMATIONS}')
+    best_setups = {'logreg':best_setup_logreg,'svm':best_setup_svm,'gmm':best_setup_gmm} 
+    fused_scores =[]
+    fused_labels = []
+    for model in ['logreg','svm','gmm']:
+        scores = compute_scores(model,best_setups[model],features)
+        min_dcf = get_min_dcf(scores,classes,TARGET_PRIOR,1.0,1.0)
+        act_dcf = get_dcf(scores,classes,TARGET_PRIOR,1.0,1.0,normalized=True,threshold='optimal')
+        print(f'{model}: MinDCF: {min_dcf}')
+        print(f'{model}: Actual DCF: {act_dcf}')
+        eff_prior_log_odds,dcfs,mindcfs = bayes_error_plot(scores,classes,left=-4,right=4,n_points=10)
+        bayes_cal_plot(None,dcfs,mindcfs,eff_prior_log_odds,model,cal=False)
+
+        # _,_,_,_,llrscores= calibrate_kfold(model,classes,best_system['prior'],fusion=False,eval=True,scores=scores)
+        # fused_scores.append(llrscores)
+        # fused_labels.append(classes)
+        # min_dcf = get_min_dcf(llrscores,classes,TARGET_PRIOR)
+        # act_dcf = get_dcf(llrscores,classes,TARGET_PRIOR,1.0,1.0,normalized=True,threshold='optimal')
+        # print(f'{model}: MinDCF: {min_dcf}')
+        # print(f'{model}: Actual DCF: {act_dcf}')
+    
+    fused_scores = np.vstack(fused_scores)
+    fused_labels = np.vstack(fused_labels)
+    lrc = LogRegClassifier.with_details(fused_scores, fused_labels, fused_scores, fused_labels)
+    w,b = lrc.train('weighted',l=0,pT=0.1)
+
  
 
