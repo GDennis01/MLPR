@@ -83,6 +83,7 @@ def set_best_scores_transformations(LTE,priors,model,fusion=False):
     global BEST_SCORE_TRANSFORMATIONS
     best_act_dcf = np.inf 
     for prior in priors:
+        #performing k-fold calibration
         lr_scores,calibrated_labels,w,b,final_scores = calibrate_kfold(model,LTE,prior,fusion)
 
         calibrated_scores = np.hstack(lr_scores)

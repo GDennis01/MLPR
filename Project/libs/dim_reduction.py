@@ -16,7 +16,7 @@ def PCA(dataset,n_dim,specif_dim=None):
         P = U[:,specif_dim:specif_dim+1]
 
     return P.T
-# LDA is based on maximing the
+
 def LDA(cov_wt,cov_bt,m):
     U,s,_ = np.linalg.svd(cov_wt)
     P1 = (U@  np.diag(1.0/(s**0.5)))@ U.T 
